@@ -21,6 +21,8 @@ data/clinicaltrials_2021/docs.jsonl
 data/clinicaltrials_2021/qrels.tsv
 data/clinicaltrials_2021/queries.jsonl
 
+processed/
+
 
 .idea
 

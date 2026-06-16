@@ -92,3 +92,26 @@ All imports succeeded.
 
 It will also print your installed PyTorch version and whether CUDA is available.
 
+## 8. Preprocess the datasets
+
+After installing dependencies and downloading the spaCy/NLTK resources, generate the
+processed document and query files:
+
+```bash
+python scripts/preprocess_datasets.py
+python scripts/preprocess_queries.py
+```
+
+The preprocessing scripts write:
+
+- `processed/argsme_touche2022/processed_docs.jsonl`
+- `processed/argsme_touche2022/processed_queries.jsonl`
+- `processed/clinicaltrials_2021/processed_docs.jsonl`
+- `processed/clinicaltrials_2021/processed_queries.jsonl`
+
+For a quick smoke test, limit the number of processed records per dataset:
+
+```bash
+python scripts/preprocess_datasets.py --limit 10
+python scripts/preprocess_queries.py --limit 10
+```
