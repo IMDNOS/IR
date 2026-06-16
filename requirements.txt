@@ -1,0 +1,33 @@
+# Core
+numpy
+pandas
+scipy
+tqdm
+joblib
+
+# IR datasets
+ir_datasets
+
+# NLP / preprocessing
+nltk
+spacy
+vaderSentiment
+
+# Classical IR
+scikit-learn
+rank-bm25
+
+# Embeddings / deep learning
+torch
+transformers
+sentence-transformers
+
+# Evaluation
+ranx
+
+# UI
+streamlit
+
+# Development
+jupyter
+ipykernel
