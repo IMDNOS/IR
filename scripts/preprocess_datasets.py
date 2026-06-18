@@ -12,10 +12,10 @@ if str(PROJECT_ROOT) not in sys.path:
 from services.preprocessing_service import PreprocessingService
 
 
-DATASETS = [
-    PROJECT_ROOT / "data" / "argsme_touche2022",
-    PROJECT_ROOT / "data" / "clinicaltrials_2021",
-]
+DATASETS = {
+    "argsme_touche2022": PROJECT_ROOT / "data" / "argsme_touche2022",
+    "clinicaltrials_2021": PROJECT_ROOT / "data" / "clinicaltrials_2021",
+}
 PROCESSED_ROOT = PROJECT_ROOT / "processed"
 
 DOCUMENT_ID_FIELDS = ("doc_id", "id", "_id", "document_id")
@@ -118,6 +118,12 @@ def preprocess_jsonl_dataset(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Preprocess dataset documents.")
     parser.add_argument(
+        "--dataset",
+        required=True,
+        choices=sorted(DATASETS.keys()),
+        help="Dataset to preprocess.",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=None,
@@ -135,15 +141,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     preprocessor = PreprocessingService()
-
-    for dataset_dir in DATASETS:
-        output_path = preprocess_jsonl_dataset(
-            dataset_dir,
-            preprocessor,
-            batch_size=args.batch_size,
-            limit=args.limit,
-        )
-        print(f"Saved processed documents to: {output_path}")
+    dataset_dir = DATASETS[args.dataset]
+    output_path = preprocess_jsonl_dataset(
+        dataset_dir,
+        preprocessor,
+        batch_size=args.batch_size,
+        limit=args.limit,
+    )
+    print(f"Saved processed documents to: {output_path}")
 
 
 if __name__ == "__main__":
