@@ -250,14 +250,18 @@ class DiskIndexBuilder:
         total_doc_len = 0
 
         # Track seen document IDs to skip duplicates
-        seen_doc_ids = set()
+        seen_doc_ids: set[str] = set()
+        next_internal_id = 0
 
-        for internal_id, doc in enumerate(self._iter_docs(processed_docs_path)):
+        for doc in self._iter_docs(processed_docs_path):
             # Extract doc_id and skip duplicates
             doc_id = str(doc["doc_id"])
             if doc_id in seen_doc_ids:
                 continue
             seen_doc_ids.add(doc_id)
+
+            internal_id = next_internal_id
+            next_internal_id += 1
 
             lexical_tokens = doc.get("lexical_tokens") or []
             if not isinstance(lexical_tokens, list):
@@ -269,7 +273,7 @@ class DiskIndexBuilder:
             docs_rows.append(
                 (
                     internal_id,
-                    doc_id,
+                    doc_id,  # Use the pre-converted doc_id variable
                     str(doc["raw_text"]),
                     str(doc["embedding_text"]),
                     doc_len,
