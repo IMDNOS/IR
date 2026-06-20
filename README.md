@@ -191,6 +191,16 @@ Hybrid parallel example:
 
 The first API request can be slower because models and index metadata are loaded lazily, then cached per dataset.
 
+## Web UI
+
+Start the API first, then run the Streamlit UI:
+
+```bash
+streamlit run ui/app.py
+```
+
+The UI uses the API base URL `http://127.0.0.1:8000` by default.
+
 ## Bruno
 
 The `bruno/` folder contains API request examples. Use the `Local` environment after starting the API on `127.0.0.1:8000`.
