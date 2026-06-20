@@ -1,0 +1,36 @@
+info:
+  name: Search GET
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/search"
+  params:
+    - name: dataset
+      value: argsme_touche2022
+      type: query
+    - name: query
+      value: climate change policy
+      type: query
+    - name: mode
+      value: bm25
+      type: query
+    - name: top_k
+      value: "10"
+      type: query
+    - name: serial_candidate_k
+      value: "100"
+      type: query
+    - name: fusion_pool_k
+      value: "1000"
+      type: query
+    - name: tfidf_weight
+      value: "0.3"
+      type: query
+    - name: bm25_weight
+      value: "0.35"
+      type: query
+    - name: embedding_weight
+      value: "0.35"
+      type: query

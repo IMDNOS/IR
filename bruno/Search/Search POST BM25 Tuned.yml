@@ -1,0 +1,22 @@
+info:
+  name: Search POST BM25 Tuned
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/search"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "dataset": "clinicaltrials_2021",
+        "query": "diabetes treatment",
+        "mode": "bm25",
+        "top_k": 10,
+        "bm25_k1": 1.2,
+        "bm25_b": 0.7
+      }

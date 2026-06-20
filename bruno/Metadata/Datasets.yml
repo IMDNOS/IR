@@ -1,0 +1,8 @@
+info:
+  name: Datasets
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/datasets"

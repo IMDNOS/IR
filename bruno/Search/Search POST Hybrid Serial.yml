@@ -1,0 +1,21 @@
+info:
+  name: Search POST Hybrid Serial
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/search"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "dataset": "clinicaltrials_2021",
+        "query": "diabetes treatment",
+        "mode": "hybrid_serial",
+        "top_k": 10,
+        "serial_candidate_k": 100
+      }

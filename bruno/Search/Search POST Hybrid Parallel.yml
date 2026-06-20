@@ -1,0 +1,26 @@
+info:
+  name: Search POST Hybrid Parallel
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/search"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "dataset": "argsme_touche2022",
+        "query": "climate change policy",
+        "mode": "hybrid_parallel",
+        "top_k": 10,
+        "fusion_pool_k": 1000,
+        "weights": {
+          "tfidf": 0.2,
+          "bm25": 0.55,
+          "embedding": 0.25
+        }
+      }

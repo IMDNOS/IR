@@ -1,0 +1,20 @@
+info:
+  name: Search POST BM25
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/search"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "dataset": "argsme_touche2022",
+        "query": "climate change policy",
+        "mode": "bm25",
+        "top_k": 10
+      }
