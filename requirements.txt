@@ -28,6 +28,10 @@ ranx
 # UI
 streamlit
 
+# API
+fastapi
+uvicorn[standard]
+
 # Development
 jupyter
 ipykernel
