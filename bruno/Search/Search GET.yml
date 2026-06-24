@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/v1/search"
+  url: "{{baseUrl}}/api/v1/search?dataset=argsme_touche2022&query=climate change policy&mode=bm25&top_k=10&serial_candidate_k=100&fusion_pool_k=1000&tfidf_weight=0.3&bm25_weight=0.35&embedding_weight=0.35"
   params:
     - name: dataset
       value: argsme_touche2022
@@ -34,3 +34,9 @@ http:
     - name: embedding_weight
       value: "0.35"
       type: query
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

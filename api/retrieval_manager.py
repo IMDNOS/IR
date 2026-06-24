@@ -6,7 +6,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from services.disk_index_service import DiskRetrievalService, HybridWeights
+from services.disk_index_models import HybridWeights
+from services.search_service import SearchService
 
 from api.schemas import DatasetStatus, SearchRequest
 
@@ -18,7 +19,7 @@ MODES = ["tfidf", "bm25", "embedding", "hybrid_serial", "hybrid_parallel"]
 
 class RetrievalServiceManager:
     """
-    Keeps one DiskRetrievalService instance per dataset.
+    Keeps one SearchService instance per dataset.
 
     This avoids loading spaCy + SentenceTransformer on every request.
     The first search for a dataset may be slower because the model is loaded.
@@ -26,9 +27,9 @@ class RetrievalServiceManager:
     """
 
     def __init__(self) -> None:
-        self._services: dict[str, DiskRetrievalService] = {}
+        self._services: dict[str, SearchService] = {}
 
-    def get_service(self, dataset: str) -> DiskRetrievalService:
+    def get_service(self, dataset: str) -> SearchService:
         if dataset not in DATASETS:
             raise ValueError(f"Unsupported dataset: {dataset}")
 
@@ -38,7 +39,7 @@ class RetrievalServiceManager:
                 raise FileNotFoundError(
                     f"Index for dataset '{dataset}' is not ready. Expected files under: {index_dir}"
                 )
-            self._services[dataset] = DiskRetrievalService(index_dir=index_dir)
+            self._services[dataset] = SearchService(index_dir=index_dir)
 
         return self._services[dataset]
 

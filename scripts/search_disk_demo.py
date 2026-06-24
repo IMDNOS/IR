@@ -6,7 +6,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from services.disk_index_service import DiskRetrievalService, HybridWeights
+from services.disk_index_models import HybridWeights
+from services.search_service import SearchService
 
 DATASETS = ["argsme_touche2022", "clinicaltrials_2021"]
 MODES = ["tfidf", "bm25", "embedding", "hybrid_serial", "hybrid_parallel"]
@@ -32,7 +33,7 @@ def main() -> None:
     args = parse_args()
     index_dir = PROJECT_ROOT / "indexes" / args.dataset
 
-    service = DiskRetrievalService(index_dir=index_dir)
+    service = SearchService(index_dir=index_dir)
     try:
         results = service.search(
             query_text=args.query,

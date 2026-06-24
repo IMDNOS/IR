@@ -6,7 +6,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from services.disk_index_service import BM25Params, DiskIndexBuilder
+from services.disk_index_models import BM25Params
+from services.indexing_service import IndexingService
 
 DATASETS = [
     "argsme_touche2022",
@@ -51,7 +52,7 @@ def main() -> None:
     args = parse_args()
     selected = DATASETS if args.dataset == "all" else [args.dataset]
 
-    builder = DiskIndexBuilder(
+    builder = IndexingService(
         model_name=args.model_name,
         embedding_batch_size=args.embedding_batch_size,
         embedding_chunk_docs=args.embedding_chunk_docs,
