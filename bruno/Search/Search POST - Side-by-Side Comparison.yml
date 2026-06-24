@@ -1,0 +1,23 @@
+info:
+  name: Search POST - Side-by-Side Comparison
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/search"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "dataset": "argsme_touche2022",
+        "query": "clmate change policy",
+        "mode": "bm25",
+        "top_k": 10,
+        "enable_spelling_correction": true,
+        "enable_synonym_expansion": true,
+        "show_original_results": true
+      }

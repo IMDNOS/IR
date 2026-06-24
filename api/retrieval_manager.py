@@ -8,6 +8,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from services.disk_index_models import HybridWeights
 from services.search_service import SearchService
+from services.query_refinement_service import QueryRefinementService
 
 from api.schemas import DatasetStatus, SearchRequest
 
@@ -28,6 +29,7 @@ class RetrievalServiceManager:
 
     def __init__(self) -> None:
         self._services: dict[str, SearchService] = {}
+        self.query_refinement_service = QueryRefinementService(PROJECT_ROOT / "data")
 
     def get_service(self, dataset: str) -> SearchService:
         if dataset not in DATASETS:

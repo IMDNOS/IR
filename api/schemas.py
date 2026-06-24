@@ -30,6 +30,12 @@ class SearchRequest(BaseModel):
     bm25_k1: float | None = Field(default=None, gt=0.0, le=5.0)
     bm25_b: float | None = Field(default=None, ge=0.0, le=1.0)
 
+    # Query refinement toggles
+    enable_spelling_correction: bool = Field(default=False)
+    enable_synonym_expansion: bool = Field(default=False)
+    enable_search_history: bool = Field(default=False)
+    show_original_results: bool = Field(default=False)
+
 
 class SourceScoresResponse(BaseModel):
     tfidf: float | None = None
@@ -45,6 +51,16 @@ class SearchResultResponse(BaseModel):
     source_scores: dict[str, float]
 
 
+class RefinementInfo(BaseModel):
+    original_query: str
+    corrected_query: str | None = None
+    expanded_query: str | None = None
+    history_boosted_query: str | None = None
+    final_query: str
+    refinement_log: list[str]
+    applied_refinements: list[str]
+
+
 class SearchResponse(BaseModel):
     dataset: str
     mode: str
@@ -52,6 +68,8 @@ class SearchResponse(BaseModel):
     top_k: int
     count: int
     results: list[SearchResultResponse]
+    refinement_info: RefinementInfo | None = None
+    original_results: list[SearchResultResponse] | None = None
 
 
 class DatasetStatus(BaseModel):

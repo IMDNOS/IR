@@ -1,0 +1,21 @@
+info:
+  name: Search POST - Search History
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/search"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "dataset": "argsme_touche2022",
+        "query": "climate change",
+        "mode": "bm25",
+        "top_k": 10,
+        "enable_search_history": true
+      }

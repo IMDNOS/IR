@@ -96,10 +96,31 @@ def render_dataset_status(datasets_response: dict[str, Any]) -> None:
     st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
 
-def render_results(response: dict[str, Any]) -> None:
+def render_refinement_info(refinement_info: dict[str, Any]) -> None:
+    with st.expander("Refinement Details", expanded=True):
+        st.write(f"**Original query:** `{refinement_info.get('original_query')}`")
+        st.write(f"**Final query:** `{refinement_info.get('final_query')}`")
+
+        if refinement_info.get("corrected_query"):
+            st.write(f"  → Corrected: `{refinement_info.get('corrected_query')}`")
+
+        if refinement_info.get("expanded_query"):
+            st.write(f"  → Expanded: `{refinement_info.get('expanded_query')}`")
+
+        if refinement_info.get("history_boosted_query"):
+            st.write(f"  → History boosted: `{refinement_info.get('history_boosted_query')}`")
+
+        if refinement_info.get("refinement_log"):
+            st.write("**Changes made:**")
+            for log_entry in refinement_info.get("refinement_log", []):
+                st.write(f"  - {log_entry}")
+
+
+def render_results(response: dict[str, Any], label: str = "") -> None:
     results = response.get("results", [])
+    label_text = f" {label}" if label else ""
     st.caption(
-        f"{response.get('count', 0)} result(s) for "
+        f"{response.get('count', 0)} result(s){label_text} for "
         f"`{response.get('query', '')}` using `{response.get('mode', '')}` "
         f"on `{response.get('dataset', '')}`"
     )
@@ -207,6 +228,15 @@ with st.form("search_form"):
         embedding_weight = 0.35
         fusion_pool_k = 1000
 
+    st.subheader("Query Refinement")
+    refine_col1, refine_col2 = st.columns(2)
+    with refine_col1:
+        enable_spelling_correction = st.checkbox("Spelling Correction", value=False)
+        enable_synonym_expansion = st.checkbox("Synonym Expansion", value=False)
+    with refine_col2:
+        enable_search_history = st.checkbox("Search History", value=False)
+        show_original_results = st.checkbox("Show Original Results", value=False)
+
     submitted = st.form_submit_button("Search", type="primary", use_container_width=True)
 
 
@@ -226,6 +256,10 @@ if submitted:
                 "bm25": bm25_weight,
                 "embedding": embedding_weight,
             },
+            "enable_spelling_correction": enable_spelling_correction,
+            "enable_synonym_expansion": enable_synonym_expansion,
+            "enable_search_history": enable_search_history,
+            "show_original_results": show_original_results,
         }
 
         if tune_bm25:
@@ -235,6 +269,30 @@ if submitted:
         with st.spinner("Searching..."):
             try:
                 search_response = api_post(api_base_url, "/api/v1/search", payload)
-                render_results(search_response)
+
+                # Display refinement info if available
+                refinement_info = search_response.get("refinement_info")
+                if refinement_info:
+                    render_refinement_info(refinement_info)
+
+                # Display original results if side-by-side comparison is enabled
+                original_results = search_response.get("original_results")
+                if original_results and show_original_results:
+                    left_col, right_col = st.columns(2)
+                    with left_col:
+                        st.subheader("Original Query Results")
+                        original_response = {
+                            **search_response,
+                            "results": original_results,
+                            "count": len(original_results),
+                            "query": query.strip(),
+                        }
+                        render_results(original_response, "(Original)")
+                    with right_col:
+                        st.subheader("Refined Query Results")
+                        render_results(search_response, "(Refined)")
+                else:
+                    render_results(search_response)
+
             except RuntimeError as exc:
                 st.error(str(exc))

@@ -1,0 +1,23 @@
+info:
+  name: Search POST - All Refinements
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/search"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "dataset": "argsme_touche2022",
+        "query": "clmate change",
+        "mode": "bm25",
+        "top_k": 10,
+        "enable_spelling_correction": true,
+        "enable_synonym_expansion": true,
+        "enable_search_history": true
+      }

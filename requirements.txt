@@ -32,6 +32,9 @@ streamlit
 fastapi
 uvicorn[standard]
 
+# Query refinement
+pyspellchecker
+
 # Development
 jupyter
 ipykernel

@@ -1,0 +1,90 @@
+[
+  {
+    "timestamp": "2026-06-24T10:53:22.587611",
+    "query": "climate change policy",
+    "top_doc_ids": [
+      "Sc530b04b-A301a1580",
+      "S7f6c271b-A6d0e0204",
+      "S7f6c271b-A13b672da",
+      "Sc530b04b-A123bdec8",
+      "Sc530b04b-Ad0271ef2"
+    ]
+  },
+  {
+    "timestamp": "2026-06-24T10:55:27.000271",
+    "query": "climate change police",
+    "top_doc_ids": [
+      "S8f18b48f-A35409a72",
+      "S83ff45f2-A1b7af9ba",
+      "S718dcae8-Adf94b7a8",
+      "S72b717aa-A5b71474b",
+      "Sbb913bfc-Ad4382e85"
+    ]
+  },
+  {
+    "timestamp": "2026-06-24T10:55:48.242802",
+    "query": "climate change pole",
+    "top_doc_ids": [
+      "Sc9ba19f5-A1c189db",
+      "Sc9ba19f5-A80b1262b",
+      "S8b9f6fe1-A3b2b123",
+      "Sc9ba19f5-Ac087f8f3",
+      "Sfb47c4dc-A9a81ed27"
+    ]
+  },
+  {
+    "timestamp": "2026-06-24T10:55:58.838237",
+    "query": "climate change policy",
+    "top_doc_ids": [
+      "Sc530b04b-A301a1580",
+      "S7f6c271b-A6d0e0204",
+      "S7f6c271b-A13b672da",
+      "Sc530b04b-A123bdec8",
+      "Sc530b04b-Ad0271ef2"
+    ]
+  },
+  {
+    "timestamp": "2026-06-24T10:56:08.597195",
+    "query": "climate change pole",
+    "top_doc_ids": [
+      "Sc9ba19f5-A1c189db",
+      "Sc9ba19f5-A80b1262b",
+      "S8b9f6fe1-A3b2b123",
+      "Sc9ba19f5-Ac087f8f3",
+      "Sfb47c4dc-A9a81ed27"
+    ]
+  },
+  {
+    "timestamp": "2026-06-24T10:56:11.493548",
+    "query": "climate change pole",
+    "top_doc_ids": [
+      "Sc9ba19f5-A1c189db",
+      "Sc9ba19f5-A80b1262b",
+      "S8b9f6fe1-A3b2b123",
+      "Sc9ba19f5-Ac087f8f3",
+      "Sfb47c4dc-A9a81ed27"
+    ]
+  },
+  {
+    "timestamp": "2026-06-24T10:58:33.522360",
+    "query": "climate change policy",
+    "top_doc_ids": [
+      "Sc530b04b-A301a1580",
+      "S7f6c271b-A6d0e0204",
+      "S7f6c271b-A13b672da",
+      "Sc530b04b-A123bdec8",
+      "Sc530b04b-Ad0271ef2"
+    ]
+  },
+  {
+    "timestamp": "2026-06-24T10:59:06.169073",
+    "query": "climate change",
+    "top_doc_ids": [
+      "S72b717aa-A5b71474b",
+      "Sbb913bfc-Ad4382e85",
+      "Sab411082-Aef70853",
+      "Sb3622b08-A51d84a00",
+      "S797b35ea-Abaa629f6"
+    ]
+  }
+]
