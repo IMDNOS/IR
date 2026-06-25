@@ -1,0 +1,51 @@
+evaluation_id	dataset	mode	query_id	query_text	relevant_docs	average_precision	recall	precision_at_10	ndcg
+20260625T140409Z	argsme_touche2022	bm25	1	Should teachers get tenure?	105	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	2	Is vaping with e-cigarettes safe?	69	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	3	Should insider trading be allowed?	55	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	4	Should corporal punishment be used in schools?	122	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	5	Should social security be privatized?	85	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	6	Is a college education worth it?	111	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	7	Should felons who have completed their sentence be allowed to vote?	105	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	8	Should abortion be legal?	125	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	9	Should students have to wear school uniforms?	126	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	10	Should any vaccines be required for children?	105	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	11	Should performance-enhancing drugs be accepted in sports?	119	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	12	Should birth control pills be available over the counter?	85	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	13	Can alternative energy effectively replace fossil fuels?	103	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	14	Is sexual orientation determined at birth?	88	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	15	Should animals be used for scientific or commercial testing?	113	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	16	Should prescription drugs be advertised directly to consumers?	87	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	17	Should recreational marijuana be legal?	131	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	18	Should churches remain tax-exempt?	93	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	19	Should gay marriage be legal?	123	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	20	Is drinking milk healthy for humans?	121	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	21	Is human activity primarily responsible for global climate change?	107	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	22	Is a two-state solution an acceptable solution to the Israeli-Palestinian conflict?	92	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	23	Should euthanasia or physician-assisted suicide be legal?	124	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	24	Does lowering the federal corporate income tax rate create jobs?	53	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	25	Should education be free?	107	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	26	Do standardized tests improve education?	108	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	27	Should more gun control laws be enacted?	103	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	28	Should prostitution be legal?	127	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	29	Should the government allow illegal immigrants to become citizens?	126	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	30	Should adults have the right to carry a concealed handgun?	108	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	31	Is obesity a disease?	89	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	32	Do electronic voting machines improve the voting process?	61	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	33	Should people become vegetarian?	91	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	34	Are social networking sites good for our society?	93	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	35	Do violent video games contribute to youth violence?	116	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	36	Is golf a sport?	108	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	37	Is cell phone radiation safe?	77	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	38	Should marijuana be a medical option?	120	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	39	Should the federal minimum wage be increased?	135	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	40	Should the death penalty be allowed?	131	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	41	Should student loan debt be easier to discharge in bankruptcy?	77	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	42	Should fighting be allowed in hockey?	80	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	43	Should bottled water be banned?	98	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	44	Should election day be a national holiday?	43	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	45	Should the penny stay in circulation?	107	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	46	Should net neutrality be restored?	118	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	47	Is homework beneficial?	98	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	48	Should the voting age be lowered?	97	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	49	Should body cameras be mandatory for police?	113	0.0	0.0	0.0	0.0
+20260625T140409Z	argsme_touche2022	bm25	50	Should everyone get a universal basic income?	61	0.0	0.0	0.0	0.0

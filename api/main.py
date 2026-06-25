@@ -11,7 +11,16 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.retrieval_manager import DATASETS, MODES, PROJECT_ROOT, RetrievalServiceManager
-from api.schemas import HealthResponse, SearchRequest, SearchResponse, RefinementInfo, SearchResultResponse
+from api.schemas import (
+    EvaluationRecordResponse,
+    EvaluationRunRequest,
+    HealthResponse,
+    SearchRequest,
+    SearchResponse,
+    RefinementInfo,
+    SearchResultResponse,
+)
+from services.evaluation_service import EvaluationService
 
 app = FastAPI(
     title="IR Project Search API",
@@ -28,6 +37,11 @@ app.add_middleware(
 )
 
 manager = RetrievalServiceManager()
+evaluation_service = EvaluationService(
+    data_root=PROJECT_ROOT / "data",
+    evaluations_root=PROJECT_ROOT / "evaluations",
+    manager=manager,
+)
 
 
 @app.on_event("shutdown")
@@ -164,7 +178,7 @@ def search(request: SearchRequest) -> SearchResponse:
     # Record search in history if refinement was applied
     if has_refinement and results:
         try:
-            top_doc_ids = [result.doc_id for result in results[:5]]
+            top_doc_ids = [result.doc_id for result in results[:10]]
             manager.query_refinement_service.record_search(query_to_search, request.dataset, top_doc_ids)
         except Exception:
             pass  # Don't fail the search if history recording fails
@@ -188,6 +202,27 @@ def search(request: SearchRequest) -> SearchResponse:
         refinement_info=refinement_info,
         original_results=original_results,
     )
+
+
+@app.post("/api/v1/evaluations", tags=["evaluation"])
+def run_evaluation(request: EvaluationRunRequest) -> dict:
+    try:
+        record = evaluation_service.run(request)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Evaluation failed: {exc}") from exc
+
+    if isinstance(record, list):
+        return {"evaluations": [EvaluationRecordResponse(**item.__dict__).model_dump() for item in record]}
+    return {"evaluations": [EvaluationRecordResponse(**record.__dict__).model_dump()]}
+
+
+@app.get("/api/v1/evaluations", tags=["evaluation"])
+def list_evaluations(dataset: str | None = None) -> dict:
+    return {"evaluations": evaluation_service.list_runs(dataset=dataset)}
 
 # @app.get("/api/v1/search", response_model=SearchResponse, tags=["search"])
 # def search_get(

@@ -66,6 +66,14 @@ def load_modes(base_url: str) -> dict[str, Any]:
     return api_get(base_url, "/api/v1/modes")
 
 
+@st.cache_data(ttl=10)
+def load_evaluations(base_url: str, dataset: str | None = None) -> dict[str, Any]:
+    path = "/api/v1/evaluations"
+    if dataset:
+        path = f"{path}?dataset={dataset}"
+    return api_get(base_url, path)
+
+
 def format_score(value: Any) -> str:
     if isinstance(value, (int, float)):
         return f"{value:.6f}"
@@ -154,6 +162,57 @@ def render_results(response: dict[str, Any], label: str = "") -> None:
             st.write(result.get("raw_text") or "")
 
 
+def render_evaluation_runs(evaluations_response: dict[str, Any]) -> None:
+    evaluations = evaluations_response.get("evaluations", [])
+    if not evaluations:
+        st.info("No evaluations have been run yet.")
+        return
+
+    rows = []
+    for item in evaluations:
+        metrics = item.get("metrics") or {}
+        rows.append(
+            {
+                "evaluation_id": item.get("evaluation_id"),
+                "dataset": item.get("dataset"),
+                "mode": item.get("mode"),
+                "created_at": item.get("created_at"),
+                "num_queries": item.get("num_queries"),
+                "MAP": metrics.get("MAP"),
+                "Recall": metrics.get("Recall"),
+                "Precision@10": metrics.get("Precision@10"),
+                "nDCG": metrics.get("nDCG"),
+                "refinements_enabled": item.get("refinements_enabled"),
+                "query_source": item.get("query_source"),
+            }
+        )
+
+    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+    for item in evaluations:
+        with st.expander(f"{item.get('evaluation_id')} - {item.get('dataset')} - {item.get('mode')}", expanded=False):
+            st.json(item)
+
+
+def render_eval_table(evaluations: list[dict[str, Any]]) -> None:
+    if not evaluations:
+        st.info("No evaluation data returned.")
+        return
+    df = pd.DataFrame(
+        [
+            {
+                "Dataset": item.get("dataset"),
+                "Mode": item.get("mode"),
+                "MAP": item.get("metrics", {}).get("MAP"),
+                "Recall": item.get("metrics", {}).get("Recall"),
+                "Precision@10": item.get("metrics", {}).get("Precision@10"),
+                "nDCG": item.get("metrics", {}).get("nDCG"),
+            }
+            for item in evaluations
+        ]
+    )
+    st.dataframe(df, hide_index=True, use_container_width=True)
+
+
 with st.sidebar:
     st.header("API")
     api_base_url = st.text_input("Base URL", DEFAULT_API_BASE_URL)
@@ -177,15 +236,6 @@ with st.sidebar:
 
 
 st.title("IR Search")
-
-if health_response:
-    with st.expander("API status", expanded=False):
-        st.json(health_response)
-
-if datasets_response:
-    with st.expander("Dataset status", expanded=False):
-        render_dataset_status(datasets_response)
-
 available_datasets = (
     health_response.get("available_datasets", DEFAULT_DATASETS)
     if health_response
@@ -193,106 +243,201 @@ available_datasets = (
 )
 available_modes = modes_response.get("modes", DEFAULT_MODES) if modes_response else DEFAULT_MODES
 
-with st.form("search_form"):
-    left, right = st.columns([2, 1])
+search_tab, evaluation_tab, runs_tab = st.tabs(["Search", "Run Evaluation", "Evaluation History"])
 
-    with left:
-        query = st.text_input("Query", value="climate change policy")
-        dataset = st.selectbox("Dataset", available_datasets)
-        mode = st.selectbox("Retrieval mode", available_modes, index=available_modes.index("bm25") if "bm25" in available_modes else 0)
+with search_tab:
+    if health_response:
+        with st.expander("API status", expanded=False):
+            st.json(health_response)
 
-    with right:
-        top_k = st.slider("Top K", min_value=1, max_value=100, value=10)
-        tune_bm25 = st.checkbox("Tune BM25", value=False)
-        bm25_k1 = st.slider("BM25 k1", min_value=0.1, max_value=5.0, value=1.5, step=0.1, disabled=not tune_bm25)
-        bm25_b = st.slider("BM25 b", min_value=0.0, max_value=1.0, value=0.75, step=0.05, disabled=not tune_bm25)
+    if datasets_response:
+        with st.expander("Dataset status", expanded=False):
+            render_dataset_status(datasets_response)
 
-    if mode == "hybrid_serial":
-        serial_candidate_k = st.slider("Serial candidate K", min_value=1, max_value=10000, value=100)
-    else:
-        serial_candidate_k = 100
+    with st.form("search_form"):
+        left, right = st.columns([2, 1])
 
-    if mode == "hybrid_parallel":
-        st.subheader("Hybrid weights")
-        w1, w2, w3 = st.columns(3)
-        with w1:
-            tfidf_weight = st.slider("TF-IDF weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05)
-        with w2:
-            bm25_weight = st.slider("BM25 weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05)
-        with w3:
-            embedding_weight = st.slider("Embedding weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05)
-        fusion_pool_k = st.slider("Fusion pool K", min_value=1, max_value=50000, value=1000)
-    else:
-        tfidf_weight = 0.30
-        bm25_weight = 0.35
-        embedding_weight = 0.35
-        fusion_pool_k = 1000
+        with left:
+            query = st.text_input("Query", value="climate change policy")
+            dataset = st.selectbox("Dataset", available_datasets)
+            mode = st.selectbox("Retrieval mode", available_modes, index=available_modes.index("bm25") if "bm25" in available_modes else 0)
 
-    st.subheader("Query Refinement")
-    refine_col1, refine_col2 = st.columns(2)
-    with refine_col1:
-        enable_spelling_correction = st.checkbox("Spelling Correction", value=False)
-        enable_synonym_expansion = st.checkbox("Synonym Expansion", value=False)
-    with refine_col2:
-        enable_search_history = st.checkbox("Search History", value=False)
-        show_original_results = st.checkbox("Show Original Results", value=False)
+        with right:
+            top_k = st.slider("Top K", min_value=1, max_value=100, value=10)
+            tune_bm25 = st.checkbox("Tune BM25", value=False)
+            bm25_k1 = st.slider("BM25 k1", min_value=0.1, max_value=5.0, value=1.5, step=0.1, disabled=not tune_bm25)
+            bm25_b = st.slider("BM25 b", min_value=0.0, max_value=1.0, value=0.75, step=0.05, disabled=not tune_bm25)
 
-    submitted = st.form_submit_button("Search", type="primary", use_container_width=True)
+        if mode == "hybrid_serial":
+            serial_candidate_k = st.slider("Serial candidate K", min_value=1, max_value=10000, value=100)
+        else:
+            serial_candidate_k = 100
 
+        if mode == "hybrid_parallel":
+            st.subheader("Hybrid weights")
+            w1, w2, w3 = st.columns(3)
+            with w1:
+                tfidf_weight = st.slider("TF-IDF weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05)
+            with w2:
+                bm25_weight = st.slider("BM25 weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05)
+            with w3:
+                embedding_weight = st.slider("Embedding weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05)
+            fusion_pool_k = st.slider("Fusion pool K", min_value=1, max_value=50000, value=1000)
+        else:
+            tfidf_weight = 0.30
+            bm25_weight = 0.35
+            embedding_weight = 0.35
+            fusion_pool_k = 1000
 
-if submitted:
-    if not query.strip():
-        st.warning("Enter a query before searching.")
-    else:
+        st.subheader("Query Refinement")
+        refine_col1, refine_col2 = st.columns(2)
+        with refine_col1:
+            enable_spelling_correction = st.checkbox("Spelling Correction", value=False)
+            enable_synonym_expansion = st.checkbox("Synonym Expansion", value=False)
+        with refine_col2:
+            enable_search_history = st.checkbox("Search History", value=False)
+            show_original_results = st.checkbox("Show Original Results", value=False)
+
+        submitted = st.form_submit_button("Search", type="primary", use_container_width=True)
+
+    if submitted:
+        if not query.strip():
+            st.warning("Enter a query before searching.")
+        else:
+            payload: dict[str, Any] = {
+                "dataset": dataset,
+                "query": query.strip(),
+                "mode": mode,
+                "top_k": top_k,
+                "serial_candidate_k": serial_candidate_k,
+                "fusion_pool_k": fusion_pool_k,
+                "weights": {
+                    "tfidf": tfidf_weight,
+                    "bm25": bm25_weight,
+                    "embedding": embedding_weight,
+                },
+                "enable_spelling_correction": enable_spelling_correction,
+                "enable_synonym_expansion": enable_synonym_expansion,
+                "enable_search_history": enable_search_history,
+                "show_original_results": show_original_results,
+            }
+
+            if tune_bm25:
+                payload["bm25_k1"] = bm25_k1
+                payload["bm25_b"] = bm25_b
+
+            with st.spinner("Searching..."):
+                try:
+                    search_response = api_post(api_base_url, "/api/v1/search", payload)
+
+                    refinement_info = search_response.get("refinement_info")
+                    if refinement_info:
+                        render_refinement_info(refinement_info)
+
+                    original_results = search_response.get("original_results")
+                    if original_results and show_original_results:
+                        left_col, right_col = st.columns(2)
+                        with left_col:
+                            st.subheader("Original Query Results")
+                            original_response = {
+                                **search_response,
+                                "results": original_results,
+                                "count": len(original_results),
+                                "query": query.strip(),
+                            }
+                            render_results(original_response, "(Original)")
+                        with right_col:
+                            st.subheader("Refined Query Results")
+                            render_results(search_response, "(Refined)")
+                    else:
+                        render_results(search_response)
+
+                except RuntimeError as exc:
+                    st.error(str(exc))
+
+with evaluation_tab:
+    st.subheader("Run Evaluation")
+    with st.form("evaluation_form"):
+        eval_dataset = st.selectbox("Dataset", available_datasets, key="eval_dataset")
+        eval_mode = st.selectbox("Retrieval mode", available_modes, index=available_modes.index("bm25") if "bm25" in available_modes else 0, key="eval_mode")
+        eval_top_k = st.slider("Top K", min_value=1, max_value=100, value=10, key="eval_top_k")
+        eval_query_source = st.selectbox("Query source", ["title", "description", "text", "title_description"], index=0)
+
+        eval_left, eval_right = st.columns(2)
+        with eval_left:
+            eval_tune_bm25 = st.checkbox("Tune BM25", value=False, key="eval_tune_bm25")
+            eval_enable_spell = st.checkbox("Spelling Correction", value=False, key="eval_enable_spell")
+            eval_enable_synonyms = st.checkbox("Synonym Expansion", value=False, key="eval_enable_synonyms")
+        with eval_right:
+            eval_enable_history = st.checkbox("Search History", value=False, key="eval_enable_history")
+            eval_show_original = st.checkbox("Include original results flag", value=False, disabled=True)
+
+        if eval_mode == "hybrid_serial":
+            eval_serial_candidate_k = st.slider("Serial candidate K", min_value=1, max_value=10000, value=100, key="eval_serial_candidate_k")
+        else:
+            eval_serial_candidate_k = 100
+
+        if eval_mode == "hybrid_parallel":
+            st.subheader("Hybrid weights")
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                eval_tfidf_weight = st.slider("TF-IDF weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05, key="eval_tfidf_weight")
+            with c2:
+                eval_bm25_weight = st.slider("BM25 weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05, key="eval_bm25_weight")
+            with c3:
+                eval_embedding_weight = st.slider("Embedding weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05, key="eval_embedding_weight")
+            eval_fusion_pool_k = st.slider("Fusion pool K", min_value=1, max_value=50000, value=1000, key="eval_fusion_pool_k")
+        else:
+            eval_tfidf_weight = 0.30
+            eval_bm25_weight = 0.35
+            eval_embedding_weight = 0.35
+            eval_fusion_pool_k = 1000
+
+        if eval_tune_bm25:
+            eval_bm25_k1 = st.slider("BM25 k1", min_value=0.1, max_value=5.0, value=1.5, step=0.1, key="eval_bm25_k1")
+            eval_bm25_b = st.slider("BM25 b", min_value=0.0, max_value=1.0, value=0.75, step=0.05, key="eval_bm25_b")
+        else:
+            eval_bm25_k1 = None
+            eval_bm25_b = None
+
+        run_eval = st.form_submit_button("Run evaluation", type="primary", use_container_width=True)
+
+    if run_eval:
         payload: dict[str, Any] = {
-            "dataset": dataset,
-            "query": query.strip(),
-            "mode": mode,
-            "top_k": top_k,
-            "serial_candidate_k": serial_candidate_k,
-            "fusion_pool_k": fusion_pool_k,
+            "dataset": eval_dataset,
+            "mode": eval_mode,
+            "top_k": eval_top_k,
+            "serial_candidate_k": eval_serial_candidate_k,
+            "fusion_pool_k": eval_fusion_pool_k,
             "weights": {
-                "tfidf": tfidf_weight,
-                "bm25": bm25_weight,
-                "embedding": embedding_weight,
+                "tfidf": eval_tfidf_weight,
+                "bm25": eval_bm25_weight,
+                "embedding": eval_embedding_weight,
             },
-            "enable_spelling_correction": enable_spelling_correction,
-            "enable_synonym_expansion": enable_synonym_expansion,
-            "enable_search_history": enable_search_history,
-            "show_original_results": show_original_results,
+            "enable_spelling_correction": eval_enable_spell,
+            "enable_synonym_expansion": eval_enable_synonyms,
+            "enable_search_history": eval_enable_history,
+            "query_source": eval_query_source,
         }
+        if eval_bm25_k1 is not None:
+            payload["bm25_k1"] = eval_bm25_k1
+            payload["bm25_b"] = eval_bm25_b
 
-        if tune_bm25:
-            payload["bm25_k1"] = bm25_k1
-            payload["bm25_b"] = bm25_b
-
-        with st.spinner("Searching..."):
+        with st.spinner("Running evaluation..."):
             try:
-                search_response = api_post(api_base_url, "/api/v1/search", payload)
-
-                # Display refinement info if available
-                refinement_info = search_response.get("refinement_info")
-                if refinement_info:
-                    render_refinement_info(refinement_info)
-
-                # Display original results if side-by-side comparison is enabled
-                original_results = search_response.get("original_results")
-                if original_results and show_original_results:
-                    left_col, right_col = st.columns(2)
-                    with left_col:
-                        st.subheader("Original Query Results")
-                        original_response = {
-                            **search_response,
-                            "results": original_results,
-                            "count": len(original_results),
-                            "query": query.strip(),
-                        }
-                        render_results(original_response, "(Original)")
-                    with right_col:
-                        st.subheader("Refined Query Results")
-                        render_results(search_response, "(Refined)")
-                else:
-                    render_results(search_response)
-
+                evaluation_response = api_post(api_base_url, "/api/v1/evaluations", payload, timeout=1800)
+                st.success("Evaluation completed")
+                render_eval_table(evaluation_response.get("evaluations", []))
             except RuntimeError as exc:
                 st.error(str(exc))
+
+with runs_tab:
+    selected_dataset = st.selectbox("Dataset filter", ["All"] + available_datasets)
+    dataset_filter = None if selected_dataset == "All" else selected_dataset
+    if st.button("Refresh evaluations", use_container_width=True):
+        load_evaluations.clear()
+    try:
+        evaluations_response = load_evaluations(api_base_url, dataset_filter)
+        render_evaluation_runs(evaluations_response)
+    except RuntimeError as exc:
+        st.error(str(exc))
