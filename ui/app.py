@@ -361,7 +361,7 @@ with evaluation_tab:
         eval_dataset = st.selectbox("Dataset", available_datasets, key="eval_dataset")
         eval_mode = st.selectbox("Retrieval mode", available_modes, index=available_modes.index("bm25") if "bm25" in available_modes else 0, key="eval_mode")
         eval_top_k = st.slider("Top K", min_value=1, max_value=100, value=10, key="eval_top_k")
-        eval_query_source = st.selectbox("Query source", ["title", "description", "text", "title_description"], index=0)
+        eval_query_source = st.selectbox("Query source", ["title_description", "title", "description", "text"], index=0)
 
         eval_left, eval_right = st.columns(2)
         with eval_left:

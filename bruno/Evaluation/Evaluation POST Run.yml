@@ -1,0 +1,20 @@
+info:
+  name: Evaluation POST Run
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/evaluations"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "dataset": "argsme_touche2022",
+        "mode": "all",
+        "top_k": 10,
+        "query_source": "title_description"
+      }

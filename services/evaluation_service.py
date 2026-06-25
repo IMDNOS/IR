@@ -98,12 +98,29 @@ class EvaluationService:
                 if len(row) < 3:
                     continue
                 query_id = str(row[0]).strip()
-                doc_id = str(row[1]).strip()
-                relevance = int(row[2])
-                if relevance <= 0:
+                raw_target = str(row[1]).strip()
+                relevance_scores = [int(value) for value in row[2:] if str(value).strip()]
+                if not relevance_scores or max(relevance_scores) <= 0:
                     continue
-                qrels.setdefault(query_id, {})[doc_id] = relevance
+                relevance = max(relevance_scores)
+                for doc_id in self._normalize_qrel_target(raw_target):
+                    current = qrels.setdefault(query_id, {}).get(doc_id, 0)
+                    if relevance > current:
+                        qrels[query_id][doc_id] = relevance
         return qrels
+
+    @staticmethod
+    def _normalize_qrel_target(raw_target: str) -> list[str]:
+        base_ids: list[str] = []
+        for part in raw_target.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            if "__" in part:
+                part = part.split("__", 1)[0]
+            if part and part not in base_ids:
+                base_ids.append(part)
+        return base_ids
 
     @staticmethod
     def _average_precision(ranked_doc_ids: list[str], relevant: dict[str, int]) -> float:
