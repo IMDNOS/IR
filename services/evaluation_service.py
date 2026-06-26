@@ -16,6 +16,7 @@ class EvaluationRecord:
     mode: str
     created_at: str
     file_path: str
+    top_k: int
     metrics: dict[str, float]
     num_queries: int
     avg_relevant_docs: float
@@ -29,6 +30,7 @@ class EvaluationRecord:
 class EvaluationSummary:
     dataset: str
     mode: str
+    top_k: int
     metrics: dict[str, float]
     num_queries: int
     avg_relevant_docs: float
@@ -180,7 +182,7 @@ class EvaluationService:
         ndcg_values: list[float] = []
         rel_counts: list[int] = []
 
-        search_top_k = max(100, request.top_k)
+        search_top_k = request.top_k
         for query_id, query_text in query_texts.items():
             relevant = qrels.get(query_id, {})
             rel_counts.append(len(relevant))
@@ -238,6 +240,7 @@ class EvaluationService:
         summary = EvaluationSummary(
             dataset=request.dataset,
             mode=mode,
+            top_k=request.top_k,
             metrics=metrics,
             num_queries=len(query_texts),
             avg_relevant_docs=sum(rel_counts) / len(rel_counts),
@@ -277,6 +280,7 @@ class EvaluationService:
                 "dataset": request.dataset,
                 "mode": mode,
                 "created_at": datetime.now(timezone.utc).isoformat(),
+                "top_k": summary.top_k,
                 "metrics": summary.metrics,
                 "num_queries": summary.num_queries,
                 "avg_relevant_docs": summary.avg_relevant_docs,
@@ -295,6 +299,7 @@ class EvaluationService:
                     mode=mode,
                     created_at=payload["created_at"],
                     file_path=str(output_path),
+                    top_k=summary.top_k,
                     metrics=summary.metrics,
                     num_queries=summary.num_queries,
                     avg_relevant_docs=summary.avg_relevant_docs,

@@ -178,6 +178,7 @@ def render_evaluation_runs(evaluations_response: dict[str, Any]) -> None:
                 "dataset": item.get("dataset"),
                 "mode": item.get("mode"),
                 "created_at": item.get("created_at"),
+                "top_k": item.get("top_k"),
                 "num_queries": item.get("num_queries"),
                 "MAP": metrics.get("MAP"),
                 "Recall": metrics.get("Recall"),
@@ -202,6 +203,7 @@ def render_eval_table(evaluations: list[dict[str, Any]]) -> None:
             {
                 "Dataset": item.get("dataset"),
                 "Mode": item.get("mode"),
+                "Top K": item.get("top_k"),
                 "MAP": item.get("metrics", {}).get("MAP"),
                 "Recall": item.get("metrics", {}).get("Recall"),
                 "Precision@10": item.get("metrics", {}).get("Precision@10"),
@@ -361,7 +363,7 @@ with evaluation_tab:
         eval_dataset = st.selectbox("Dataset", available_datasets, key="eval_dataset")
         eval_modes = ["all"] + available_modes if "all" not in available_modes else available_modes
         eval_mode = st.selectbox("Retrieval mode", eval_modes, index=eval_modes.index("all") if "all" in eval_modes else 0, key="eval_mode")
-        eval_top_k = st.slider("Top K", min_value=1, max_value=100, value=10, key="eval_top_k")
+        eval_top_k = st.slider("Top K", min_value=10, max_value=100, value=10, key="eval_top_k")
         eval_left, eval_right = st.columns(2)
         with eval_left:
             eval_tune_bm25 = st.checkbox("Tune BM25", value=False, key="eval_tune_bm25")

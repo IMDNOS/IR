@@ -94,7 +94,7 @@ class HealthResponse(BaseModel):
 class EvaluationRunRequest(BaseModel):
     dataset: DatasetName
     mode: RetrievalMode | str = "all"
-    top_k: int = Field(default=10, ge=1, le=100)
+    top_k: int = Field(default=10, ge=10, le=100)
     serial_candidate_k: int = Field(default=100, ge=1, le=10000)
     fusion_pool_k: int = Field(default=1000, ge=1, le=50000)
     weights: HybridWeightsRequest = Field(default_factory=HybridWeightsRequest)
@@ -118,6 +118,7 @@ class EvaluationRecordResponse(BaseModel):
     mode: str
     created_at: str
     file_path: str
+    top_k: int
     metrics: dict[str, float]
     num_queries: int
     avg_relevant_docs: float
