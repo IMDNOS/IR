@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -169,29 +170,54 @@ def render_evaluation_runs(evaluations_response: dict[str, Any]) -> None:
         st.info("No evaluations have been run yet.")
         return
 
-    rows = []
+    mode_order = {
+        "tfidf": 0,
+        "bm25": 1,
+        "embedding": 2,
+        "hybrid_serial": 3,
+        "hybrid_parallel": 4,
+    }
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item in evaluations:
-        metrics = item.get("metrics") or {}
-        rows.append(
-            {
-                "evaluation_id": item.get("evaluation_id"),
-                "dataset": item.get("dataset"),
-                "mode": item.get("mode"),
-                "created_at": item.get("created_at"),
-                "top_k": item.get("top_k"),
-                "num_queries": item.get("num_queries"),
-                "MAP": metrics.get("MAP"),
-                "Recall": metrics.get("Recall"),
-                "Precision@10": metrics.get("Precision@10"),
-                "nDCG": metrics.get("nDCG"),
-                "refinements_enabled": item.get("refinements_enabled"),
-            }
+        evaluation_id = str(item.get("evaluation_id") or "unknown")
+        groups[evaluation_id].append(item)
+
+    for evaluation_id in sorted(groups.keys(), reverse=True):
+        group_items = groups[evaluation_id]
+        first_item = group_items[0]
+        dataset = first_item.get("dataset") or "N/A"
+        top_k = first_item.get("top_k") if first_item.get("top_k") is not None else "N/A"
+        refinements_enabled = any(item.get("refinements_enabled") for item in group_items)
+        refinements_label = "enabled" if refinements_enabled else "disabled"
+        title = (
+            f"Evaluation {evaluation_id} | {dataset} | top_k={top_k} | "
+            f"refinements={refinements_label} | {len(group_items)} modes"
         )
 
-    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
-    for item in evaluations:
-        with st.expander(f"{item.get('evaluation_id')} - {item.get('dataset')} - {item.get('mode')}", expanded=False):
-            st.json(item)
+        rows = []
+        sorted_items = sorted(
+            group_items,
+            key=lambda item: (mode_order.get(item.get("mode"), 999), str(item.get("mode") or "")),
+        )
+        for item in sorted_items:
+            metrics = item.get("metrics") or {}
+            rows.append(
+                {
+                    "dataset": item.get("dataset"),
+                    "mode": item.get("mode"),
+                    "created_at": item.get("created_at"),
+                    "top_k": item.get("top_k") if item.get("top_k") is not None else "N/A",
+                    "num_queries": item.get("num_queries"),
+                    "MAP": metrics.get("MAP"),
+                    "Recall": metrics.get("Recall"),
+                    "Precision@10": metrics.get("Precision@10"),
+                    "nDCG": metrics.get("nDCG"),
+                    "refinements_enabled": item.get("refinements_enabled"),
+                }
+            )
+
+        with st.expander(title, expanded=False):
+            st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
 
 def render_eval_table(evaluations: list[dict[str, Any]]) -> None:
