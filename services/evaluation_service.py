@@ -21,6 +21,7 @@ class EvaluationRecord:
     num_queries: int
     avg_relevant_docs: float
     refinements_enabled: bool
+    enabled_refinements: list[str]
     bm25_k1: float | None
     bm25_b: float | None
     query_source: str
@@ -35,6 +36,7 @@ class EvaluationSummary:
     num_queries: int
     avg_relevant_docs: float
     refinements_enabled: bool
+    enabled_refinements: list[str]
     bm25_k1: float | None
     bm25_b: float | None
     query_source: str
@@ -167,6 +169,34 @@ class EvaluationService:
             return 0.0
         return dcg(ranked_doc_ids) / ideal_dcg
 
+    @staticmethod
+    def _enabled_refinements(request: EvaluationRunRequest) -> list[str]:
+        enabled: list[str] = []
+        if request.enable_spelling_correction:
+            enabled.append("spelling_correction")
+        if request.enable_synonym_expansion:
+            enabled.append("synonym_expansion")
+        if request.enable_search_history:
+            enabled.append("search_history")
+        return enabled
+
+    def _apply_query_refinements(
+        self,
+        request: EvaluationRunRequest,
+        query_text: str,
+    ) -> tuple[str, list[str], list[str]]:
+        if not request.has_refinements():
+            return query_text, [], []
+
+        refined = self.manager.query_refinement_service.refine(
+            query=query_text,
+            dataset=request.dataset,
+            enable_spelling_correction=request.enable_spelling_correction,
+            enable_synonym_expansion=request.enable_synonym_expansion,
+            enable_search_history=request.enable_search_history,
+        )
+        return refined.final_query, refined.applied_refinements, refined.refinement_log
+
     def _evaluate_mode(
         self,
         request: EvaluationRunRequest,
@@ -184,13 +214,14 @@ class EvaluationService:
 
         search_top_k = request.top_k
         for query_id, query_text in query_texts.items():
+            final_query, applied_refinements, refinement_log = self._apply_query_refinements(request, query_text)
             relevant = qrels.get(query_id, {})
             rel_counts.append(len(relevant))
             if relevant:
                 search_results = self.manager.search(
                     SearchRequest(
                         dataset=request.dataset,
-                        query=query_text,
+                        query=final_query,
                         mode=mode,  # type: ignore[arg-type]
                         top_k=search_top_k,
                         serial_candidate_k=request.serial_candidate_k,
@@ -198,9 +229,6 @@ class EvaluationService:
                         weights=request.weights,
                         bm25_k1=request.bm25_k1,
                         bm25_b=request.bm25_b,
-                        enable_spelling_correction=request.enable_spelling_correction,
-                        enable_synonym_expansion=request.enable_synonym_expansion,
-                        enable_search_history=request.enable_search_history,
                     )
                 )
                 ranked_doc_ids = [result.doc_id for result in search_results]
@@ -222,7 +250,10 @@ class EvaluationService:
                     "dataset": request.dataset,
                     "mode": mode,
                     "query_id": query_id,
-                    "query_text": query_text,
+                    "original_query": query_text,
+                    "final_query": final_query,
+                    "applied_refinements": json.dumps(applied_refinements, ensure_ascii=False),
+                    "refinement_log": json.dumps(refinement_log, ensure_ascii=False),
                     "relevant_docs": len(relevant),
                     "average_precision": ap,
                     "recall": recall,
@@ -245,6 +276,7 @@ class EvaluationService:
             num_queries=len(query_texts),
             avg_relevant_docs=sum(rel_counts) / len(rel_counts),
             refinements_enabled=request.has_refinements(),
+            enabled_refinements=self._enabled_refinements(request),
             bm25_k1=request.bm25_k1,
             bm25_b=request.bm25_b,
             query_source="title_description",
@@ -269,7 +301,21 @@ class EvaluationService:
                 writer = csv.DictWriter(
                     outfile,
                     delimiter="\t",
-                    fieldnames=["evaluation_id", "dataset", "mode", "query_id", "query_text", "relevant_docs", "average_precision", "recall", "precision_at_10", "ndcg"],
+                    fieldnames=[
+                        "evaluation_id",
+                        "dataset",
+                        "mode",
+                        "query_id",
+                        "original_query",
+                        "final_query",
+                        "applied_refinements",
+                        "refinement_log",
+                        "relevant_docs",
+                        "average_precision",
+                        "recall",
+                        "precision_at_10",
+                        "ndcg",
+                    ],
                 )
                 writer.writeheader()
                 writer.writerows(per_query_rows)
@@ -285,6 +331,7 @@ class EvaluationService:
                 "num_queries": summary.num_queries,
                 "avg_relevant_docs": summary.avg_relevant_docs,
                 "refinements_enabled": summary.refinements_enabled,
+                "enabled_refinements": summary.enabled_refinements,
                 "bm25_k1": summary.bm25_k1,
                 "bm25_b": summary.bm25_b,
                 "query_source": summary.query_source,
@@ -304,6 +351,7 @@ class EvaluationService:
                     num_queries=summary.num_queries,
                     avg_relevant_docs=summary.avg_relevant_docs,
                     refinements_enabled=summary.refinements_enabled,
+                    enabled_refinements=summary.enabled_refinements,
                     bm25_k1=summary.bm25_k1,
                     bm25_b=summary.bm25_b,
                     query_source=summary.query_source,

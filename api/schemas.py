@@ -123,6 +123,7 @@ class EvaluationRecordResponse(BaseModel):
     num_queries: int
     avg_relevant_docs: float
     refinements_enabled: bool
+    enabled_refinements: list[str] = Field(default_factory=list)
     bm25_k1: float | None = None
     bm25_b: float | None = None
     query_source: str = "title_description"

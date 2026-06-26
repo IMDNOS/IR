@@ -189,6 +189,8 @@ def render_evaluation_runs(evaluations_response: dict[str, Any]) -> None:
         top_k = first_item.get("top_k") if first_item.get("top_k") is not None else "N/A"
         refinements_enabled = any(item.get("refinements_enabled") for item in group_items)
         refinements_label = "enabled" if refinements_enabled else "disabled"
+        enabled_refinements = first_item.get("enabled_refinements") or []
+        enabled_refinements_label = ", ".join(enabled_refinements) if enabled_refinements else "none"
         title = (
             f"Evaluation {evaluation_id} | {dataset} | top_k={top_k} | "
             f"refinements={refinements_label} | {len(group_items)} modes"
@@ -213,10 +215,12 @@ def render_evaluation_runs(evaluations_response: dict[str, Any]) -> None:
                     "Precision@10": metrics.get("Precision@10"),
                     "nDCG": metrics.get("nDCG"),
                     "refinements_enabled": item.get("refinements_enabled"),
+                    "enabled_refinements": ", ".join(item.get("enabled_refinements") or []),
                 }
             )
 
         with st.expander(title, expanded=False):
+            st.caption(f"Enabled refinements: {enabled_refinements_label}")
             st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
 
