@@ -7,6 +7,11 @@ from urllib.request import Request, urlopen
 import pandas as pd
 import streamlit as st
 
+try:
+    from evaluation_charts import render_evaluation_charts
+except ModuleNotFoundError:
+    from ui.evaluation_charts import render_evaluation_charts
+
 
 DEFAULT_API_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_DATASETS = ["argsme_touche2022", "clinicaltrials_2021"]
@@ -84,6 +89,39 @@ def format_score(value: Any) -> str:
 
 def display_value(value: Any) -> Any:
     return value if value is not None else "N/A"
+
+
+def mode_uses_param(mode: str, param_name: str) -> bool:
+    serial_params = {
+        "serial_candidate_k",
+        "serial_bm25_weight",
+        "serial_embedding_weight",
+    }
+    parallel_params = {
+        "tfidf_weight",
+        "bm25_weight",
+        "embedding_weight",
+        "fusion_pool_k",
+    }
+    bm25_params = {
+        "bm25_k1",
+        "bm25_b",
+    }
+
+    if param_name in serial_params:
+        return mode == "hybrid_serial"
+    if param_name in parallel_params:
+        return mode == "hybrid_parallel"
+    if param_name in bm25_params:
+        return mode in {"bm25", "hybrid_serial", "hybrid_parallel"}
+    return True
+
+
+def display_param(item: dict[str, Any], param_name: str) -> Any:
+    mode = str(item.get("mode") or "")
+    if not mode_uses_param(mode, param_name):
+        return "N/A"
+    return display_value(item.get(param_name))
 
 
 def render_hybrid_weight_sum(tfidf_weight: float, bm25_weight: float, embedding_weight: float) -> bool:
@@ -237,15 +275,15 @@ def render_evaluation_runs(evaluations_response: dict[str, Any]) -> None:
                     "mode": item.get("mode"),
                     "created_at": item.get("created_at"),
                     "top_k": display_value(item.get("top_k")),
-                    "serial_candidate_k": display_value(item.get("serial_candidate_k")),
-                    "serial_bm25_weight": display_value(item.get("serial_bm25_weight")),
-                    "serial_embedding_weight": display_value(item.get("serial_embedding_weight")),
-                    "tfidf_weight": display_value(item.get("tfidf_weight")),
-                    "bm25_weight": display_value(item.get("bm25_weight")),
-                    "embedding_weight": display_value(item.get("embedding_weight")),
-                    "fusion_pool_k": display_value(item.get("fusion_pool_k")),
-                    "bm25_k1": display_value(item.get("bm25_k1")),
-                    "bm25_b": display_value(item.get("bm25_b")),
+                    "serial_candidate_k": display_param(item, "serial_candidate_k"),
+                    "serial_bm25_weight": display_param(item, "serial_bm25_weight"),
+                    "serial_embedding_weight": display_param(item, "serial_embedding_weight"),
+                    "tfidf_weight": display_param(item, "tfidf_weight"),
+                    "bm25_weight": display_param(item, "bm25_weight"),
+                    "embedding_weight": display_param(item, "embedding_weight"),
+                    "fusion_pool_k": display_param(item, "fusion_pool_k"),
+                    "bm25_k1": display_param(item, "bm25_k1"),
+                    "bm25_b": display_param(item, "bm25_b"),
                     "num_queries": item.get("num_queries"),
                     "MAP": metrics.get("MAP"),
                     "Recall": metrics.get("Recall"),
@@ -271,15 +309,15 @@ def render_eval_table(evaluations: list[dict[str, Any]]) -> None:
                 "Dataset": item.get("dataset"),
                 "Mode": item.get("mode"),
                 "Top K": display_value(item.get("top_k")),
-                "serial_candidate_k": display_value(item.get("serial_candidate_k")),
-                "serial_bm25_weight": display_value(item.get("serial_bm25_weight")),
-                "serial_embedding_weight": display_value(item.get("serial_embedding_weight")),
-                "tfidf_weight": display_value(item.get("tfidf_weight")),
-                "bm25_weight": display_value(item.get("bm25_weight")),
-                "embedding_weight": display_value(item.get("embedding_weight")),
-                "fusion_pool_k": display_value(item.get("fusion_pool_k")),
-                "bm25_k1": display_value(item.get("bm25_k1")),
-                "bm25_b": display_value(item.get("bm25_b")),
+                "serial_candidate_k": display_param(item, "serial_candidate_k"),
+                "serial_bm25_weight": display_param(item, "serial_bm25_weight"),
+                "serial_embedding_weight": display_param(item, "serial_embedding_weight"),
+                "tfidf_weight": display_param(item, "tfidf_weight"),
+                "bm25_weight": display_param(item, "bm25_weight"),
+                "embedding_weight": display_param(item, "embedding_weight"),
+                "fusion_pool_k": display_param(item, "fusion_pool_k"),
+                "bm25_k1": display_param(item, "bm25_k1"),
+                "bm25_b": display_param(item, "bm25_b"),
                 "MAP": item.get("metrics", {}).get("MAP"),
                 "Recall": item.get("metrics", {}).get("Recall"),
                 "Precision@10": item.get("metrics", {}).get("Precision@10"),
@@ -321,7 +359,7 @@ available_datasets = (
 )
 available_modes = modes_response.get("modes", DEFAULT_MODES) if modes_response else DEFAULT_MODES
 
-search_tab, evaluation_tab, runs_tab = st.tabs(["Search", "Run Evaluation", "Evaluation History"])
+search_tab, evaluation_tab, runs_tab, charts_tab = st.tabs(["Search", "Run Evaluation", "Evaluation History", "Evaluation Charts"])
 
 with search_tab:
     if health_response:
@@ -562,5 +600,22 @@ with runs_tab:
     try:
         evaluations_response = load_evaluations(api_base_url, dataset_filter)
         render_evaluation_runs(evaluations_response)
+    except RuntimeError as exc:
+        st.error(str(exc))
+
+with charts_tab:
+    selected_dataset = st.selectbox(
+        "Dataset filter",
+        ["All"] + available_datasets,
+        key="charts_dataset_filter",
+    )
+    dataset_filter = None if selected_dataset == "All" else selected_dataset
+
+    if st.button("Refresh chart data", use_container_width=True):
+        load_evaluations.clear()
+
+    try:
+        evaluations_response = load_evaluations(api_base_url, dataset_filter)
+        render_evaluation_charts(evaluations_response)
     except RuntimeError as exc:
         st.error(str(exc))
