@@ -82,6 +82,20 @@ def format_score(value: Any) -> str:
     return ""
 
 
+def render_hybrid_weight_sum(tfidf_weight: float, bm25_weight: float, embedding_weight: float) -> bool:
+    total = tfidf_weight + bm25_weight + embedding_weight
+    is_valid = abs(total - 1.0) < 1e-9
+    if is_valid:
+        st.success(f"Hybrid weight sum: {total:.2f}")
+    else:
+        st.error(f"Hybrid weight sum must be 1.00. Current sum: {total:.2f}")
+    return is_valid
+
+
+def mode_supports_bm25_tuning(mode: str) -> bool:
+    return mode in {"all", "bm25", "hybrid_serial", "hybrid_parallel"}
+
+
 def render_dataset_status(datasets_response: dict[str, Any]) -> None:
     datasets = datasets_response.get("datasets", [])
     if not datasets:
@@ -286,51 +300,64 @@ with search_tab:
         with st.expander("Dataset status", expanded=False):
             render_dataset_status(datasets_response)
 
-    with st.form("search_form"):
-        left, right = st.columns([2, 1])
+    left, right = st.columns([2, 1])
 
-        with left:
-            query = st.text_input("Query", value="climate change policy")
-            dataset = st.selectbox("Dataset", available_datasets)
-            mode = st.selectbox("Retrieval mode", available_modes, index=available_modes.index("bm25") if "bm25" in available_modes else 0)
+    with left:
+        query = st.text_input("Query", value="climate change policy")
+        dataset = st.selectbox("Dataset", available_datasets)
+        mode = st.selectbox("Retrieval mode", available_modes, index=available_modes.index("bm25") if "bm25" in available_modes else 0)
 
-        with right:
-            top_k = st.slider("Top K", min_value=1, max_value=100, value=10)
-            tune_bm25 = st.checkbox("Tune BM25", value=False)
-            bm25_k1 = st.slider("BM25 k1", min_value=0.1, max_value=5.0, value=1.5, step=0.1, disabled=not tune_bm25)
-            bm25_b = st.slider("BM25 b", min_value=0.0, max_value=1.0, value=0.75, step=0.05, disabled=not tune_bm25)
+    with right:
+        top_k = st.slider("Top K", min_value=1, max_value=100, value=10)
+        bm25_tuning_available = mode_supports_bm25_tuning(mode)
+        tune_bm25_requested = st.checkbox("Tune BM25", value=False, disabled=not bm25_tuning_available)
+        tune_bm25 = bm25_tuning_available and tune_bm25_requested
+        if not bm25_tuning_available:
+            st.caption("BM25 tuning applies only to BM25 and hybrid modes.")
 
-        if mode == "hybrid_serial":
-            serial_candidate_k = st.slider("Serial candidate K", min_value=1, max_value=10000, value=100)
-        else:
-            serial_candidate_k = 100
+    if tune_bm25:
+        bm25_col1, bm25_col2 = st.columns(2)
+        with bm25_col1:
+            bm25_k1 = st.slider("BM25 k1", min_value=0.1, max_value=5.0, value=1.5, step=0.1)
+        with bm25_col2:
+            bm25_b = st.slider("BM25 b", min_value=0.0, max_value=1.0, value=0.75, step=0.05)
+    else:
+        bm25_k1 = None
+        bm25_b = None
 
-        if mode == "hybrid_parallel":
-            st.subheader("Hybrid weights")
-            w1, w2, w3 = st.columns(3)
-            with w1:
-                tfidf_weight = st.slider("TF-IDF weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05)
-            with w2:
-                bm25_weight = st.slider("BM25 weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05)
-            with w3:
-                embedding_weight = st.slider("Embedding weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05)
-            fusion_pool_k = st.slider("Fusion pool K", min_value=1, max_value=50000, value=1000)
-        else:
-            tfidf_weight = 0.30
-            bm25_weight = 0.35
-            embedding_weight = 0.35
-            fusion_pool_k = 1000
+    if mode == "hybrid_serial":
+        serial_candidate_k = st.slider("Serial candidate K", min_value=1, max_value=10000, value=100)
+    else:
+        serial_candidate_k = 100
 
-        st.subheader("Query Refinement")
-        refine_col1, refine_col2 = st.columns(2)
-        with refine_col1:
-            enable_spelling_correction = st.checkbox("Spelling Correction", value=False)
-            enable_synonym_expansion = st.checkbox("Synonym Expansion", value=False)
-        with refine_col2:
-            enable_search_history = st.checkbox("Search History", value=False)
-            show_original_results = st.checkbox("Show Original Results", value=False)
+    if mode == "hybrid_parallel":
+        st.subheader("Hybrid weights")
+        w1, w2, w3 = st.columns(3)
+        with w1:
+            tfidf_weight = st.slider("TF-IDF weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05)
+        with w2:
+            bm25_weight = st.slider("BM25 weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05)
+        with w3:
+            embedding_weight = st.slider("Embedding weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05)
+        fusion_pool_k = st.slider("Fusion pool K", min_value=1, max_value=50000, value=1000)
+        hybrid_weights_valid = render_hybrid_weight_sum(tfidf_weight, bm25_weight, embedding_weight)
+    else:
+        tfidf_weight = 0.30
+        bm25_weight = 0.35
+        embedding_weight = 0.35
+        fusion_pool_k = 1000
+        hybrid_weights_valid = True
 
-        submitted = st.form_submit_button("Search", type="primary", use_container_width=True)
+    st.subheader("Query Refinement")
+    refine_col1, refine_col2 = st.columns(2)
+    with refine_col1:
+        enable_spelling_correction = st.checkbox("Spelling Correction", value=False)
+        enable_synonym_expansion = st.checkbox("Synonym Expansion", value=False)
+    with refine_col2:
+        enable_search_history = st.checkbox("Search History", value=False)
+        show_original_results = st.checkbox("Show Original Results", value=False)
+
+    submitted = st.button("Search", type="primary", use_container_width=True, disabled=not hybrid_weights_valid)
 
     if submitted:
         if not query.strip():
@@ -397,7 +424,11 @@ with evaluation_tab:
 
     eval_left, eval_right = st.columns(2)
     with eval_left:
-        eval_tune_bm25 = st.checkbox("Tune BM25", value=False, key="eval_tune_bm25")
+        eval_bm25_tuning_available = mode_supports_bm25_tuning(eval_mode)
+        eval_tune_bm25_requested = st.checkbox("Tune BM25", value=False, disabled=not eval_bm25_tuning_available, key="eval_tune_bm25")
+        eval_tune_bm25 = eval_bm25_tuning_available and eval_tune_bm25_requested
+        if not eval_bm25_tuning_available:
+            st.caption("BM25 tuning applies only to BM25 and hybrid modes.")
         eval_enable_spell = st.checkbox("Spelling Correction", value=False, key="eval_enable_spell")
         eval_enable_synonyms = st.checkbox("Synonym Expansion", value=False, key="eval_enable_synonyms")
     with eval_right:
@@ -419,11 +450,13 @@ with evaluation_tab:
         with c3:
             eval_embedding_weight = st.slider("Embedding weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05, key="eval_embedding_weight")
         eval_fusion_pool_k = st.slider("Fusion pool K", min_value=1, max_value=50000, value=1000, key="eval_fusion_pool_k")
+        eval_hybrid_weights_valid = render_hybrid_weight_sum(eval_tfidf_weight, eval_bm25_weight, eval_embedding_weight)
     else:
         eval_tfidf_weight = 0.30
         eval_bm25_weight = 0.35
         eval_embedding_weight = 0.35
         eval_fusion_pool_k = 1000
+        eval_hybrid_weights_valid = True
 
     if eval_tune_bm25:
         eval_bm25_k1 = st.slider("BM25 k1", min_value=0.1, max_value=5.0, value=1.5, step=0.1, key="eval_bm25_k1")
@@ -432,7 +465,7 @@ with evaluation_tab:
         eval_bm25_k1 = None
         eval_bm25_b = None
 
-    run_eval = st.button("Run evaluation", type="primary", use_container_width=True)
+    run_eval = st.button("Run evaluation", type="primary", use_container_width=True, disabled=not eval_hybrid_weights_valid)
 
     if run_eval:
         payload: dict[str, Any] = {

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 DatasetName = Literal["argsme_touche2022", "clinicaltrials_2021"]
@@ -11,6 +11,13 @@ class HybridWeightsRequest(BaseModel):
     tfidf: float = Field(default=0.30, ge=0.0, le=1.0)
     bm25: float = Field(default=0.35, ge=0.0, le=1.0)
     embedding: float = Field(default=0.35, ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def weights_must_sum_to_one(self) -> "HybridWeightsRequest":
+        total = self.tfidf + self.bm25 + self.embedding
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"Hybrid weights must sum to 1.00. Current sum: {total:.2f}")
+        return self
 
 
 class SearchRequest(BaseModel):
