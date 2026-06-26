@@ -103,7 +103,6 @@ class EvaluationRunRequest(BaseModel):
     enable_spelling_correction: bool = Field(default=False)
     enable_synonym_expansion: bool = Field(default=False)
     enable_search_history: bool = Field(default=False)
-    query_source: str = Field(default="title_description", pattern="^(title|description|text|title_description)$")
 
     def has_refinements(self) -> bool:
         return (
@@ -125,4 +124,4 @@ class EvaluationRecordResponse(BaseModel):
     refinements_enabled: bool
     bm25_k1: float | None = None
     bm25_b: float | None = None
-    query_source: str
+    query_source: str = "title_description"

@@ -10,6 +10,7 @@ import streamlit as st
 DEFAULT_API_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_DATASETS = ["argsme_touche2022", "clinicaltrials_2021"]
 DEFAULT_MODES = ["tfidf", "bm25", "embedding", "hybrid_serial", "hybrid_parallel"]
+DEFAULT_EVALUATION_MODES = ["all", "tfidf", "bm25", "embedding", "hybrid_serial", "hybrid_parallel"]
 
 
 st.set_page_config(page_title="IR Search", layout="wide")
@@ -183,7 +184,6 @@ def render_evaluation_runs(evaluations_response: dict[str, Any]) -> None:
                 "Precision@10": metrics.get("Precision@10"),
                 "nDCG": metrics.get("nDCG"),
                 "refinements_enabled": item.get("refinements_enabled"),
-                "query_source": item.get("query_source"),
             }
         )
 
@@ -359,10 +359,9 @@ with evaluation_tab:
     st.subheader("Run Evaluation")
     with st.form("evaluation_form"):
         eval_dataset = st.selectbox("Dataset", available_datasets, key="eval_dataset")
-        eval_mode = st.selectbox("Retrieval mode", available_modes, index=available_modes.index("bm25") if "bm25" in available_modes else 0, key="eval_mode")
+        eval_modes = ["all"] + available_modes if "all" not in available_modes else available_modes
+        eval_mode = st.selectbox("Retrieval mode", eval_modes, index=eval_modes.index("all") if "all" in eval_modes else 0, key="eval_mode")
         eval_top_k = st.slider("Top K", min_value=1, max_value=100, value=10, key="eval_top_k")
-        eval_query_source = st.selectbox("Query source", ["title_description", "title", "description", "text"], index=0)
-
         eval_left, eval_right = st.columns(2)
         with eval_left:
             eval_tune_bm25 = st.checkbox("Tune BM25", value=False, key="eval_tune_bm25")
@@ -417,7 +416,6 @@ with evaluation_tab:
             "enable_spelling_correction": eval_enable_spell,
             "enable_synonym_expansion": eval_enable_synonyms,
             "enable_search_history": eval_enable_history,
-            "query_source": eval_query_source,
         }
         if eval_bm25_k1 is not None:
             payload["bm25_k1"] = eval_bm25_k1

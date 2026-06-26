@@ -15,6 +15,5 @@ http:
       {
         "dataset": "argsme_touche2022",
         "mode": "all",
-        "top_k": 10,
-        "query_source": "title_description"
+        "top_k": 10
       }

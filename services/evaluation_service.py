@@ -60,7 +60,7 @@ class EvaluationService:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def _load_queries(self, dataset: str, query_source: str = "title_description") -> dict[str, str]:
+    def _load_queries(self, dataset: str) -> dict[str, str]:
         queries_path = self._queries_path(dataset)
         if not queries_path.exists():
             raise FileNotFoundError(f"Missing queries file: {queries_path}")
@@ -73,16 +73,9 @@ class EvaluationService:
                     continue
                 payload = json.loads(line)
                 query_id = str(payload.get("query_id"))
-                if query_source == "description":
-                    text = payload.get("description") or payload.get("title") or payload.get("text") or ""
-                elif query_source == "text":
-                    text = payload.get("text") or payload.get("title") or payload.get("description") or ""
-                elif query_source == "title_description":
-                    title = payload.get("title") or ""
-                    description = payload.get("description") or ""
-                    text = f"{title} {description}".strip()
-                else:
-                    text = payload.get("title") or payload.get("description") or payload.get("text") or ""
+                title = payload.get("title") or ""
+                description = payload.get("description") or ""
+                text = f"{title} {description}".strip() or payload.get("text") or ""
                 queries[query_id] = text.strip()
         return queries
 
@@ -251,13 +244,13 @@ class EvaluationService:
             refinements_enabled=request.has_refinements(),
             bm25_k1=request.bm25_k1,
             bm25_b=request.bm25_b,
-            query_source=request.query_source,
+            query_source="title_description",
             results_file="",
         )
         return summary, per_query_rows
 
     def run(self, request: EvaluationRunRequest) -> list[EvaluationRecord] | EvaluationRecord:
-        queries = self._load_queries(request.dataset, request.query_source)
+        queries = self._load_queries(request.dataset)
         qrels = self._load_qrels(request.dataset)
         if not queries:
             raise ValueError(f"No queries found for dataset: {request.dataset}")
