@@ -82,6 +82,10 @@ def format_score(value: Any) -> str:
     return ""
 
 
+def display_value(value: Any) -> Any:
+    return value if value is not None else "N/A"
+
+
 def render_hybrid_weight_sum(tfidf_weight: float, bm25_weight: float, embedding_weight: float) -> bool:
     total = tfidf_weight + bm25_weight + embedding_weight
     is_valid = abs(total - 1.0) < 1e-9
@@ -232,9 +236,16 @@ def render_evaluation_runs(evaluations_response: dict[str, Any]) -> None:
                     "dataset": item.get("dataset"),
                     "mode": item.get("mode"),
                     "created_at": item.get("created_at"),
-                    "top_k": item.get("top_k") if item.get("top_k") is not None else "N/A",
-                    "serial_bm25_weight": item.get("serial_bm25_weight") if item.get("serial_bm25_weight") is not None else "N/A",
-                    "serial_embedding_weight": item.get("serial_embedding_weight") if item.get("serial_embedding_weight") is not None else "N/A",
+                    "top_k": display_value(item.get("top_k")),
+                    "serial_candidate_k": display_value(item.get("serial_candidate_k")),
+                    "serial_bm25_weight": display_value(item.get("serial_bm25_weight")),
+                    "serial_embedding_weight": display_value(item.get("serial_embedding_weight")),
+                    "tfidf_weight": display_value(item.get("tfidf_weight")),
+                    "bm25_weight": display_value(item.get("bm25_weight")),
+                    "embedding_weight": display_value(item.get("embedding_weight")),
+                    "fusion_pool_k": display_value(item.get("fusion_pool_k")),
+                    "bm25_k1": display_value(item.get("bm25_k1")),
+                    "bm25_b": display_value(item.get("bm25_b")),
                     "num_queries": item.get("num_queries"),
                     "MAP": metrics.get("MAP"),
                     "Recall": metrics.get("Recall"),
@@ -259,7 +270,16 @@ def render_eval_table(evaluations: list[dict[str, Any]]) -> None:
             {
                 "Dataset": item.get("dataset"),
                 "Mode": item.get("mode"),
-                "Top K": item.get("top_k"),
+                "Top K": display_value(item.get("top_k")),
+                "serial_candidate_k": display_value(item.get("serial_candidate_k")),
+                "serial_bm25_weight": display_value(item.get("serial_bm25_weight")),
+                "serial_embedding_weight": display_value(item.get("serial_embedding_weight")),
+                "tfidf_weight": display_value(item.get("tfidf_weight")),
+                "bm25_weight": display_value(item.get("bm25_weight")),
+                "embedding_weight": display_value(item.get("embedding_weight")),
+                "fusion_pool_k": display_value(item.get("fusion_pool_k")),
+                "bm25_k1": display_value(item.get("bm25_k1")),
+                "bm25_b": display_value(item.get("bm25_b")),
                 "MAP": item.get("metrics", {}).get("MAP"),
                 "Recall": item.get("metrics", {}).get("Recall"),
                 "Precision@10": item.get("metrics", {}).get("Precision@10"),
@@ -459,7 +479,7 @@ with evaluation_tab:
         eval_enable_history = st.checkbox("Search History", value=False, key="eval_enable_history")
         st.checkbox("Include original results flag", value=False, disabled=True, key="eval_show_original")
 
-    if eval_mode == "hybrid_serial":
+    if eval_mode in {"hybrid_serial", "all"}:
         eval_serial_candidate_k = st.slider("Serial candidate K", min_value=1, max_value=10000, value=100, key="eval_serial_candidate_k")
     else:
         eval_serial_candidate_k = 100
@@ -477,8 +497,8 @@ with evaluation_tab:
         eval_serial_embedding_weight = 0.70
         eval_serial_weights_valid = True
 
-    if eval_mode == "hybrid_parallel":
-        st.subheader("Hybrid weights")
+    if eval_mode in {"hybrid_parallel", "all"}:
+        st.subheader("Hybrid Parallel weights")
         c1, c2, c3 = st.columns(3)
         with c1:
             eval_tfidf_weight = st.slider("TF-IDF weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05, key="eval_tfidf_weight")
@@ -486,7 +506,7 @@ with evaluation_tab:
             eval_bm25_weight = st.slider("BM25 weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05, key="eval_bm25_weight")
         with c3:
             eval_embedding_weight = st.slider("Embedding weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05, key="eval_embedding_weight")
-        eval_fusion_pool_k = st.slider("Fusion pool K", min_value=1, max_value=50000, value=1000, key="eval_fusion_pool_k")
+        eval_fusion_pool_k = st.slider("Fusion pool K", min_value=eval_top_k, max_value=50000, value=max(1000, eval_top_k), key="eval_fusion_pool_k")
         eval_hybrid_weights_valid = render_hybrid_weight_sum(eval_tfidf_weight, eval_bm25_weight, eval_embedding_weight)
     else:
         eval_tfidf_weight = 0.30

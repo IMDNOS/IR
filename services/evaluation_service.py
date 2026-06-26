@@ -22,8 +22,13 @@ class EvaluationRecord:
     avg_relevant_docs: float
     refinements_enabled: bool
     enabled_refinements: list[str]
+    serial_candidate_k: int
     serial_bm25_weight: float
     serial_embedding_weight: float
+    tfidf_weight: float
+    bm25_weight: float
+    embedding_weight: float
+    fusion_pool_k: int
     bm25_k1: float | None
     bm25_b: float | None
     query_source: str
@@ -39,8 +44,13 @@ class EvaluationSummary:
     avg_relevant_docs: float
     refinements_enabled: bool
     enabled_refinements: list[str]
+    serial_candidate_k: int
     serial_bm25_weight: float
     serial_embedding_weight: float
+    tfidf_weight: float
+    bm25_weight: float
+    embedding_weight: float
+    fusion_pool_k: int
     bm25_k1: float | None
     bm25_b: float | None
     query_source: str
@@ -283,8 +293,13 @@ class EvaluationService:
             avg_relevant_docs=sum(rel_counts) / len(rel_counts),
             refinements_enabled=request.has_refinements(),
             enabled_refinements=self._enabled_refinements(request),
+            serial_candidate_k=request.serial_candidate_k,
             serial_bm25_weight=request.serial_bm25_weight,
             serial_embedding_weight=request.serial_embedding_weight,
+            tfidf_weight=request.weights.tfidf,
+            bm25_weight=request.weights.bm25,
+            embedding_weight=request.weights.embedding,
+            fusion_pool_k=request.fusion_pool_k,
             bm25_k1=request.bm25_k1,
             bm25_b=request.bm25_b,
             query_source="title_description",
@@ -340,8 +355,13 @@ class EvaluationService:
                 "avg_relevant_docs": summary.avg_relevant_docs,
                 "refinements_enabled": summary.refinements_enabled,
                 "enabled_refinements": summary.enabled_refinements,
+                "serial_candidate_k": summary.serial_candidate_k,
                 "serial_bm25_weight": summary.serial_bm25_weight,
                 "serial_embedding_weight": summary.serial_embedding_weight,
+                "tfidf_weight": summary.tfidf_weight,
+                "bm25_weight": summary.bm25_weight,
+                "embedding_weight": summary.embedding_weight,
+                "fusion_pool_k": summary.fusion_pool_k,
                 "bm25_k1": summary.bm25_k1,
                 "bm25_b": summary.bm25_b,
                 "query_source": summary.query_source,
@@ -362,8 +382,13 @@ class EvaluationService:
                     avg_relevant_docs=summary.avg_relevant_docs,
                     refinements_enabled=summary.refinements_enabled,
                     enabled_refinements=summary.enabled_refinements,
+                    serial_candidate_k=summary.serial_candidate_k,
                     serial_bm25_weight=summary.serial_bm25_weight,
                     serial_embedding_weight=summary.serial_embedding_weight,
+                    tfidf_weight=summary.tfidf_weight,
+                    bm25_weight=summary.bm25_weight,
+                    embedding_weight=summary.embedding_weight,
+                    fusion_pool_k=summary.fusion_pool_k,
                     bm25_k1=summary.bm25_k1,
                     bm25_b=summary.bm25_b,
                     query_source=summary.query_source,
