@@ -389,49 +389,50 @@ with search_tab:
 
 with evaluation_tab:
     st.subheader("Run Evaluation")
-    with st.form("evaluation_form"):
-        eval_dataset = st.selectbox("Dataset", available_datasets, key="eval_dataset")
-        eval_modes = ["all"] + available_modes if "all" not in available_modes else available_modes
-        eval_mode = st.selectbox("Retrieval mode", eval_modes, index=eval_modes.index("all") if "all" in eval_modes else 0, key="eval_mode")
-        eval_top_k = st.slider("Top K", min_value=10, max_value=100, value=10, key="eval_top_k")
-        eval_left, eval_right = st.columns(2)
-        with eval_left:
-            eval_tune_bm25 = st.checkbox("Tune BM25", value=False, key="eval_tune_bm25")
-            eval_enable_spell = st.checkbox("Spelling Correction", value=False, key="eval_enable_spell")
-            eval_enable_synonyms = st.checkbox("Synonym Expansion", value=False, key="eval_enable_synonyms")
-        with eval_right:
-            eval_enable_history = st.checkbox("Search History", value=False, key="eval_enable_history")
-            eval_show_original = st.checkbox("Include original results flag", value=False, disabled=True)
 
-        if eval_mode == "hybrid_serial":
-            eval_serial_candidate_k = st.slider("Serial candidate K", min_value=1, max_value=10000, value=100, key="eval_serial_candidate_k")
-        else:
-            eval_serial_candidate_k = 100
+    eval_dataset = st.selectbox("Dataset", available_datasets, key="eval_dataset")
+    eval_modes = ["all"] + available_modes if "all" not in available_modes else available_modes
+    eval_mode = st.selectbox("Retrieval mode", eval_modes, index=eval_modes.index("all") if "all" in eval_modes else 0, key="eval_mode")
+    eval_top_k = st.slider("Top K", min_value=10, max_value=100, value=10, key="eval_top_k")
 
-        if eval_mode == "hybrid_parallel":
-            st.subheader("Hybrid weights")
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                eval_tfidf_weight = st.slider("TF-IDF weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05, key="eval_tfidf_weight")
-            with c2:
-                eval_bm25_weight = st.slider("BM25 weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05, key="eval_bm25_weight")
-            with c3:
-                eval_embedding_weight = st.slider("Embedding weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05, key="eval_embedding_weight")
-            eval_fusion_pool_k = st.slider("Fusion pool K", min_value=1, max_value=50000, value=1000, key="eval_fusion_pool_k")
-        else:
-            eval_tfidf_weight = 0.30
-            eval_bm25_weight = 0.35
-            eval_embedding_weight = 0.35
-            eval_fusion_pool_k = 1000
+    eval_left, eval_right = st.columns(2)
+    with eval_left:
+        eval_tune_bm25 = st.checkbox("Tune BM25", value=False, key="eval_tune_bm25")
+        eval_enable_spell = st.checkbox("Spelling Correction", value=False, key="eval_enable_spell")
+        eval_enable_synonyms = st.checkbox("Synonym Expansion", value=False, key="eval_enable_synonyms")
+    with eval_right:
+        eval_enable_history = st.checkbox("Search History", value=False, key="eval_enable_history")
+        st.checkbox("Include original results flag", value=False, disabled=True, key="eval_show_original")
 
-        if eval_tune_bm25:
-            eval_bm25_k1 = st.slider("BM25 k1", min_value=0.1, max_value=5.0, value=1.5, step=0.1, key="eval_bm25_k1")
-            eval_bm25_b = st.slider("BM25 b", min_value=0.0, max_value=1.0, value=0.75, step=0.05, key="eval_bm25_b")
-        else:
-            eval_bm25_k1 = None
-            eval_bm25_b = None
+    if eval_mode == "hybrid_serial":
+        eval_serial_candidate_k = st.slider("Serial candidate K", min_value=1, max_value=10000, value=100, key="eval_serial_candidate_k")
+    else:
+        eval_serial_candidate_k = 100
 
-        run_eval = st.form_submit_button("Run evaluation", type="primary", use_container_width=True)
+    if eval_mode == "hybrid_parallel":
+        st.subheader("Hybrid weights")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            eval_tfidf_weight = st.slider("TF-IDF weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05, key="eval_tfidf_weight")
+        with c2:
+            eval_bm25_weight = st.slider("BM25 weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05, key="eval_bm25_weight")
+        with c3:
+            eval_embedding_weight = st.slider("Embedding weight", min_value=0.0, max_value=1.0, value=0.35, step=0.05, key="eval_embedding_weight")
+        eval_fusion_pool_k = st.slider("Fusion pool K", min_value=1, max_value=50000, value=1000, key="eval_fusion_pool_k")
+    else:
+        eval_tfidf_weight = 0.30
+        eval_bm25_weight = 0.35
+        eval_embedding_weight = 0.35
+        eval_fusion_pool_k = 1000
+
+    if eval_tune_bm25:
+        eval_bm25_k1 = st.slider("BM25 k1", min_value=0.1, max_value=5.0, value=1.5, step=0.1, key="eval_bm25_k1")
+        eval_bm25_b = st.slider("BM25 b", min_value=0.0, max_value=1.0, value=0.75, step=0.05, key="eval_bm25_b")
+    else:
+        eval_bm25_k1 = None
+        eval_bm25_b = None
+
+    run_eval = st.button("Run evaluation", type="primary", use_container_width=True)
 
     if run_eval:
         payload: dict[str, Any] = {
