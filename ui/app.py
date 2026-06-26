@@ -92,6 +92,16 @@ def render_hybrid_weight_sum(tfidf_weight: float, bm25_weight: float, embedding_
     return is_valid
 
 
+def render_serial_weight_sum(serial_bm25_weight: float, serial_embedding_weight: float) -> bool:
+    total = serial_bm25_weight + serial_embedding_weight
+    is_valid = abs(total - 1.0) < 1e-9
+    if is_valid:
+        st.success(f"Hybrid serial weight sum: {total:.2f}")
+    else:
+        st.error(f"Hybrid serial weight sum must be 1.00. Current sum: {total:.2f}")
+    return is_valid
+
+
 def mode_supports_bm25_tuning(mode: str) -> bool:
     return mode in {"all", "bm25", "hybrid_serial", "hybrid_parallel"}
 
@@ -223,6 +233,8 @@ def render_evaluation_runs(evaluations_response: dict[str, Any]) -> None:
                     "mode": item.get("mode"),
                     "created_at": item.get("created_at"),
                     "top_k": item.get("top_k") if item.get("top_k") is not None else "N/A",
+                    "serial_bm25_weight": item.get("serial_bm25_weight") if item.get("serial_bm25_weight") is not None else "N/A",
+                    "serial_embedding_weight": item.get("serial_embedding_weight") if item.get("serial_embedding_weight") is not None else "N/A",
                     "num_queries": item.get("num_queries"),
                     "MAP": metrics.get("MAP"),
                     "Recall": metrics.get("Recall"),
@@ -327,8 +339,18 @@ with search_tab:
 
     if mode == "hybrid_serial":
         serial_candidate_k = st.slider("Serial candidate K", min_value=1, max_value=10000, value=100)
+        st.subheader("Hybrid Serial weights")
+        serial_weight_col1, serial_weight_col2 = st.columns(2)
+        with serial_weight_col1:
+            serial_bm25_weight = st.slider("Serial BM25 weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05)
+        with serial_weight_col2:
+            serial_embedding_weight = st.slider("Serial Embedding weight", min_value=0.0, max_value=1.0, value=0.70, step=0.05)
+        serial_weights_valid = render_serial_weight_sum(serial_bm25_weight, serial_embedding_weight)
     else:
         serial_candidate_k = 100
+        serial_bm25_weight = 0.30
+        serial_embedding_weight = 0.70
+        serial_weights_valid = True
 
     if mode == "hybrid_parallel":
         st.subheader("Hybrid weights")
@@ -357,7 +379,7 @@ with search_tab:
         enable_search_history = st.checkbox("Search History", value=False)
         show_original_results = st.checkbox("Show Original Results", value=False)
 
-    submitted = st.button("Search", type="primary", use_container_width=True, disabled=not hybrid_weights_valid)
+    submitted = st.button("Search", type="primary", use_container_width=True, disabled=not (hybrid_weights_valid and serial_weights_valid))
 
     if submitted:
         if not query.strip():
@@ -369,6 +391,8 @@ with search_tab:
                 "mode": mode,
                 "top_k": top_k,
                 "serial_candidate_k": serial_candidate_k,
+                "serial_bm25_weight": serial_bm25_weight,
+                "serial_embedding_weight": serial_embedding_weight,
                 "fusion_pool_k": fusion_pool_k,
                 "weights": {
                     "tfidf": tfidf_weight,
@@ -440,6 +464,19 @@ with evaluation_tab:
     else:
         eval_serial_candidate_k = 100
 
+    if eval_mode in {"hybrid_serial", "all"}:
+        st.subheader("Hybrid Serial weights")
+        eval_serial_weight_col1, eval_serial_weight_col2 = st.columns(2)
+        with eval_serial_weight_col1:
+            eval_serial_bm25_weight = st.slider("Serial BM25 weight", min_value=0.0, max_value=1.0, value=0.30, step=0.05, key="eval_serial_bm25_weight")
+        with eval_serial_weight_col2:
+            eval_serial_embedding_weight = st.slider("Serial Embedding weight", min_value=0.0, max_value=1.0, value=0.70, step=0.05, key="eval_serial_embedding_weight")
+        eval_serial_weights_valid = render_serial_weight_sum(eval_serial_bm25_weight, eval_serial_embedding_weight)
+    else:
+        eval_serial_bm25_weight = 0.30
+        eval_serial_embedding_weight = 0.70
+        eval_serial_weights_valid = True
+
     if eval_mode == "hybrid_parallel":
         st.subheader("Hybrid weights")
         c1, c2, c3 = st.columns(3)
@@ -465,7 +502,7 @@ with evaluation_tab:
         eval_bm25_k1 = None
         eval_bm25_b = None
 
-    run_eval = st.button("Run evaluation", type="primary", use_container_width=True, disabled=not eval_hybrid_weights_valid)
+    run_eval = st.button("Run evaluation", type="primary", use_container_width=True, disabled=not (eval_hybrid_weights_valid and eval_serial_weights_valid))
 
     if run_eval:
         payload: dict[str, Any] = {
@@ -473,6 +510,8 @@ with evaluation_tab:
             "mode": eval_mode,
             "top_k": eval_top_k,
             "serial_candidate_k": eval_serial_candidate_k,
+            "serial_bm25_weight": eval_serial_bm25_weight,
+            "serial_embedding_weight": eval_serial_embedding_weight,
             "fusion_pool_k": eval_fusion_pool_k,
             "weights": {
                 "tfidf": eval_tfidf_weight,

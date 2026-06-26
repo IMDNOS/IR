@@ -28,6 +28,8 @@ class SearchRequest(BaseModel):
 
     # Used only by hybrid_serial.
     serial_candidate_k: int = Field(default=100, ge=1, le=10000)
+    serial_bm25_weight: float = Field(default=0.30, ge=0.0, le=1.0)
+    serial_embedding_weight: float = Field(default=0.70, ge=0.0, le=1.0)
 
     # Used only by hybrid_parallel.
     fusion_pool_k: int = Field(default=1000, ge=1, le=50000)
@@ -42,6 +44,12 @@ class SearchRequest(BaseModel):
     enable_synonym_expansion: bool = Field(default=False)
     enable_search_history: bool = Field(default=False)
     show_original_results: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def serial_weights_must_not_both_be_zero(self) -> "SearchRequest":
+        if self.serial_bm25_weight + self.serial_embedding_weight <= 0.0:
+            raise ValueError("Hybrid serial weights must not both be zero.")
+        return self
 
 
 class SourceScoresResponse(BaseModel):
@@ -103,6 +111,8 @@ class EvaluationRunRequest(BaseModel):
     mode: RetrievalMode | str = "all"
     top_k: int = Field(default=10, ge=10, le=100)
     serial_candidate_k: int = Field(default=100, ge=1, le=10000)
+    serial_bm25_weight: float = Field(default=0.30, ge=0.0, le=1.0)
+    serial_embedding_weight: float = Field(default=0.70, ge=0.0, le=1.0)
     fusion_pool_k: int = Field(default=1000, ge=1, le=50000)
     weights: HybridWeightsRequest = Field(default_factory=HybridWeightsRequest)
     bm25_k1: float | None = Field(default=None, gt=0.0, le=5.0)
@@ -110,6 +120,12 @@ class EvaluationRunRequest(BaseModel):
     enable_spelling_correction: bool = Field(default=False)
     enable_synonym_expansion: bool = Field(default=False)
     enable_search_history: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def serial_weights_must_not_both_be_zero(self) -> "EvaluationRunRequest":
+        if self.serial_bm25_weight + self.serial_embedding_weight <= 0.0:
+            raise ValueError("Hybrid serial weights must not both be zero.")
+        return self
 
     def has_refinements(self) -> bool:
         return (
@@ -133,4 +149,6 @@ class EvaluationRecordResponse(BaseModel):
     enabled_refinements: list[str] = Field(default_factory=list)
     bm25_k1: float | None = None
     bm25_b: float | None = None
+    serial_bm25_weight: float | None = None
+    serial_embedding_weight: float | None = None
     query_source: str = "title_description"

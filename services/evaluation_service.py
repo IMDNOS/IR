@@ -22,6 +22,8 @@ class EvaluationRecord:
     avg_relevant_docs: float
     refinements_enabled: bool
     enabled_refinements: list[str]
+    serial_bm25_weight: float
+    serial_embedding_weight: float
     bm25_k1: float | None
     bm25_b: float | None
     query_source: str
@@ -37,6 +39,8 @@ class EvaluationSummary:
     avg_relevant_docs: float
     refinements_enabled: bool
     enabled_refinements: list[str]
+    serial_bm25_weight: float
+    serial_embedding_weight: float
     bm25_k1: float | None
     bm25_b: float | None
     query_source: str
@@ -225,6 +229,8 @@ class EvaluationService:
                         mode=mode,  # type: ignore[arg-type]
                         top_k=search_top_k,
                         serial_candidate_k=request.serial_candidate_k,
+                        serial_bm25_weight=request.serial_bm25_weight,
+                        serial_embedding_weight=request.serial_embedding_weight,
                         fusion_pool_k=request.fusion_pool_k,
                         weights=request.weights,
                         bm25_k1=request.bm25_k1,
@@ -277,6 +283,8 @@ class EvaluationService:
             avg_relevant_docs=sum(rel_counts) / len(rel_counts),
             refinements_enabled=request.has_refinements(),
             enabled_refinements=self._enabled_refinements(request),
+            serial_bm25_weight=request.serial_bm25_weight,
+            serial_embedding_weight=request.serial_embedding_weight,
             bm25_k1=request.bm25_k1,
             bm25_b=request.bm25_b,
             query_source="title_description",
@@ -292,7 +300,7 @@ class EvaluationService:
 
         results_dir = self._evaluation_dir(request.dataset)
         evaluation_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        modes = ["tfidf", "bm25", "embedding", "hybrid_parallel"] if request.mode == "all" else [request.mode]
+        modes = ["tfidf", "bm25", "embedding", "hybrid_serial", "hybrid_parallel"] if request.mode == "all" else [request.mode]
         records: list[EvaluationRecord] = []
         for mode in modes:
             summary, per_query_rows = self._evaluate_mode(request, queries, qrels, mode, evaluation_id)
@@ -332,6 +340,8 @@ class EvaluationService:
                 "avg_relevant_docs": summary.avg_relevant_docs,
                 "refinements_enabled": summary.refinements_enabled,
                 "enabled_refinements": summary.enabled_refinements,
+                "serial_bm25_weight": summary.serial_bm25_weight,
+                "serial_embedding_weight": summary.serial_embedding_weight,
                 "bm25_k1": summary.bm25_k1,
                 "bm25_b": summary.bm25_b,
                 "query_source": summary.query_source,
@@ -352,6 +362,8 @@ class EvaluationService:
                     avg_relevant_docs=summary.avg_relevant_docs,
                     refinements_enabled=summary.refinements_enabled,
                     enabled_refinements=summary.enabled_refinements,
+                    serial_bm25_weight=summary.serial_bm25_weight,
+                    serial_embedding_weight=summary.serial_embedding_weight,
                     bm25_k1=summary.bm25_k1,
                     bm25_b=summary.bm25_b,
                     query_source=summary.query_source,

@@ -247,6 +247,8 @@ class SearchService:
         mode: RetrievalMode = "bm25",
         top_k: int = 10,
         serial_candidate_k: int = 100,
+        serial_bm25_weight: float = 0.30,
+        serial_embedding_weight: float = 0.70,
         fusion_pool_k: int = 1000,
         hybrid_weights: HybridWeights | None = None,
         bm25_k1: float | None = None,
@@ -280,7 +282,14 @@ class SearchService:
             ids = list(bm25.keys())
             nb = self._normalize_dict_scores(bm25, ids)
             ne = self._normalize_dict_scores(emb, ids)
-            final = {i: 0.30 * nb.get(i, 0.0) + 0.70 * ne.get(i, 0.0) for i in ids}
+            total = serial_bm25_weight + serial_embedding_weight
+            if total <= 0.0:
+                bm25_w = 0.30
+                emb_w = 0.70
+            else:
+                bm25_w = serial_bm25_weight / total
+                emb_w = serial_embedding_weight / total
+            final = {i: bm25_w * nb.get(i, 0.0) + emb_w * ne.get(i, 0.0) for i in ids}
             return self._format_results(final, top_k, {"bm25": bm25, "embedding": emb})
 
         if mode == "hybrid_parallel":

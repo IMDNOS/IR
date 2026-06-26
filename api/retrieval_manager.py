@@ -52,6 +52,8 @@ class RetrievalServiceManager:
             mode=request.mode,
             top_k=request.top_k,
             serial_candidate_k=request.serial_candidate_k,
+            serial_bm25_weight=request.serial_bm25_weight,
+            serial_embedding_weight=request.serial_embedding_weight,
             fusion_pool_k=request.fusion_pool_k,
             hybrid_weights=HybridWeights(
                 tfidf=request.weights.tfidf,
