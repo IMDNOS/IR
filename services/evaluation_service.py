@@ -78,6 +78,29 @@ class EvaluationService:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    def _default_evaluation_id(self) -> str:
+        return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+    def _evaluation_id_exists(self, evaluation_id: str) -> bool:
+        prefix = f"{evaluation_id}_"
+
+        if not self.evaluations_root.exists():
+            return False
+
+        for dataset_dir in self.evaluations_root.iterdir():
+            if not dataset_dir.is_dir():
+                continue
+
+            for path in dataset_dir.iterdir():
+                if not path.is_file():
+                    continue
+                if not path.name.startswith(prefix):
+                    continue
+                if path.name.endswith(".tsv") or path.name.endswith(".summary.json"):
+                    return True
+
+        return False
+
     def _load_queries(self, dataset: str) -> dict[str, str]:
         queries_path = self._queries_path(dataset)
         if not queries_path.exists():
@@ -314,8 +337,10 @@ class EvaluationService:
             raise ValueError(f"No queries found for dataset: {request.dataset}")
 
         results_dir = self._evaluation_dir(request.dataset)
-        evaluation_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         modes = ["tfidf", "bm25", "embedding", "hybrid_serial", "hybrid_parallel"] if request.mode == "all" else [request.mode]
+        evaluation_id = request.evaluation_name or self._default_evaluation_id()
+        if self._evaluation_id_exists(evaluation_id):
+            raise ValueError(f"Evaluation name already exists: {evaluation_id}")
         records: list[EvaluationRecord] = []
         for mode in modes:
             summary, per_query_rows = self._evaluate_mode(request, queries, qrels, mode, evaluation_id)

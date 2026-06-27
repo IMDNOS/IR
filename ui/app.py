@@ -500,6 +500,12 @@ with evaluation_tab:
     st.subheader("Run Evaluation")
 
     eval_dataset = st.selectbox("Dataset", available_datasets, key="eval_dataset")
+    evaluation_name = st.text_input(
+        "Evaluation name",
+        value="",
+        placeholder="baseline_bm25_v1",
+        help="Leave empty to auto-generate a timestamp-based name.",
+    )
     eval_modes = ["all"] + available_modes if "all" not in available_modes else available_modes
     eval_mode = st.selectbox("Retrieval mode", eval_modes, index=eval_modes.index("all") if "all" in eval_modes else 0, key="eval_mode")
     eval_top_k = st.slider("Top K", min_value=10, max_value=100, value=10, key="eval_top_k")
@@ -583,11 +589,15 @@ with evaluation_tab:
         if eval_bm25_k1 is not None:
             payload["bm25_k1"] = eval_bm25_k1
             payload["bm25_b"] = eval_bm25_b
+        custom_evaluation_name = evaluation_name.strip()
+        if custom_evaluation_name:
+            payload["evaluation_name"] = custom_evaluation_name
 
         with st.spinner("Running evaluation..."):
             try:
                 evaluation_response = api_post(api_base_url, "/api/v1/evaluations", payload, timeout=1800)
                 st.success("Evaluation completed")
+                load_evaluations.clear()
                 render_eval_table(evaluation_response.get("evaluations", []))
             except RuntimeError as exc:
                 st.error(str(exc))

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 DatasetName = Literal["argsme_touche2022", "clinicaltrials_2021"]
@@ -109,6 +109,7 @@ class HealthResponse(BaseModel):
 class EvaluationRunRequest(BaseModel):
     dataset: DatasetName
     mode: RetrievalMode | str = "all"
+    evaluation_name: str | None = Field(default=None, max_length=80)
     top_k: int = Field(default=10, ge=10, le=100)
     serial_candidate_k: int = Field(default=100, ge=1, le=10000)
     serial_bm25_weight: float = Field(default=0.30, ge=0.0, le=1.0)
@@ -120,6 +121,26 @@ class EvaluationRunRequest(BaseModel):
     enable_spelling_correction: bool = Field(default=False)
     enable_synonym_expansion: bool = Field(default=False)
     enable_search_history: bool = Field(default=False)
+
+    @field_validator("evaluation_name")
+    @classmethod
+    def validate_evaluation_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
+        value = value.strip()
+        if not value:
+            return None
+
+        forbidden_chars = set('/\\:*?"<>|[]')
+        invalid_chars = sorted({char for char in value if char in forbidden_chars})
+        if invalid_chars:
+            raise ValueError(
+                "Evaluation name contains invalid filename characters: "
+                + " ".join(invalid_chars)
+            )
+
+        return value
 
     @model_validator(mode="after")
     def serial_weights_must_not_both_be_zero(self) -> "EvaluationRunRequest":
